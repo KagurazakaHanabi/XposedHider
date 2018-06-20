@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="@string/title_about">
+        <Preference
+            android:summary="@string/text_donate"
+            android:title="@string/title_donate">
+            <intent
+                android:action="android.intent.action.VIEW"
+                android:data="https://demo.yaerin.com/donate" />
+        </Preference>
+        <Preference android:summary="@string/copyright" />
+    </PreferenceCategory>
+</PreferenceScreen>

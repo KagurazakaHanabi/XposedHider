@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Xposed Hide</string>
+
+    <string name="tip_reboot">模块未启用</string>
+
+    <string name="title_about">关于</string>
+    <string name="title_donate">捐赠</string>
+
+    <string name="text_about">尽可能完美地隐藏Xposed</string>
+    <string name="text_donate">点击跳转至微信二维码</string>
+
+    <string name="copyright">Copyright © 2017&#8211;2018 Yaerin All rights reserved.</string>
+</resources>
