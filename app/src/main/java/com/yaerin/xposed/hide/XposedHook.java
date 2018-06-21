@@ -6,8 +6,12 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.os.Environment;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -211,8 +215,8 @@ public class XposedHook implements IXposedHookLoadPackage {
                 }
         );
 
-        /*XposedHelpers.findAndHookMethod(
-                "java.lang.ProcessImpl",
+        XposedHelpers.findAndHookMethod(
+                "java.lang.ProcessManager$ProcessImpl",
                 lpparam.classLoader,
                 "getInputStream",
                 new XC_MethodHook() {
@@ -220,15 +224,16 @@ public class XposedHook implements IXposedHookLoadPackage {
                     protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                         InputStream is = (InputStream) param.getResult();
                         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-                        String[] s = new String[100];
-                        String line = null;
+                        StringBuilder s = new StringBuilder();
+                        String line;
                         while ((line = reader.readLine()) != null) {
-                            if (!line.toLowerCase().contains(C.KW_XPOSED)) {
-                                AdaptiveIconDrawable
+                            if (!line.toLowerCase().contains(C.KW_XPOSED) && !line.equals("su")) {
+                                s.append(line).append("\\n");
                             }
                         }
+                        param.setResult(new ByteArrayInputStream(s.toString().getBytes()));
                     }
                 }
-        );*/
+        );
     }
 }
