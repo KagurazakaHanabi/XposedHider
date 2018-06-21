@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Xposed Hide</string>
+    <string name="app_name">Xposed Hider</string>
 
     <string name="tip_reboot">模块未启用</string>
 
+    <string name="title_search">搜索</string>
     <string name="title_about">关于</string>
     <string name="title_donate">捐赠</string>
 

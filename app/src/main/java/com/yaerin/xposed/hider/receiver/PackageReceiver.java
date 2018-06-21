@@ -1,10 +1,10 @@
-package com.yaerin.xposed.hide.receiver;
+package com.yaerin.xposed.hider.receiver;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-import com.yaerin.xposed.hide.util.Utilities;
+import com.yaerin.xposed.hider.util.Utilities;
 
 public class PackageReceiver extends BroadcastReceiver {
     @Override

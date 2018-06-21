@@ -1,10 +1,10 @@
-package com.yaerin.xposed.hide.ui;
+package com.yaerin.xposed.hider.ui;
 
 import android.os.Bundle;
 import android.preference.PreferenceFragment;
 import android.support.annotation.Nullable;
 
-import com.yaerin.xposed.hide.R;
+import com.yaerin.xposed.hider.R;
 
 public class SettingsFragment extends PreferenceFragment {
     @Override

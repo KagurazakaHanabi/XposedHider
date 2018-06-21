@@ -6,6 +6,7 @@ android {
     compileSdkVersion 27
     buildToolsVersion '27.0.3'
     defaultConfig {
+        applicationId 'com.yaerin.xposed.hide'
         minSdkVersion 21
         targetSdkVersion 27
         versionCode getMyVersionCode()
@@ -31,9 +32,9 @@ dependencies {
 }
 
 static def getMyVersionCode() {
-    return Integer.parseInt(new SimpleDateFormat("yyMMdd").format(new Date()))+1
+    return Integer.parseInt(new SimpleDateFormat("yyMMdd").format(new Date()))+3
 }
 
 static def getMyVersionName() {
-    return "1.0.0." + "git describe --always".execute().getText().trim()
+    return "1.1.1." + "git describe --always".execute().getText().trim()
 }

@@ -1,4 +1,4 @@
-package com.yaerin.xposed.hide.util;
+package com.yaerin.xposed.hider.util;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -13,18 +13,18 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 
-import com.yaerin.xposed.hide.bean.AppInfo;
+import com.yaerin.xposed.hider.bean.AppInfo;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.yaerin.xposed.hide.C.COLUMN_DISABLED;
-import static com.yaerin.xposed.hide.C.COLUMN_FLAGS;
-import static com.yaerin.xposed.hide.C.COLUMN_ICON;
-import static com.yaerin.xposed.hide.C.COLUMN_LABEL;
-import static com.yaerin.xposed.hide.C.COLUMN_PACKAGE;
-import static com.yaerin.xposed.hide.C.TABLE_APPS;
+import static com.yaerin.xposed.hider.C.COLUMN_DISABLED;
+import static com.yaerin.xposed.hider.C.COLUMN_FLAGS;
+import static com.yaerin.xposed.hider.C.COLUMN_ICON;
+import static com.yaerin.xposed.hider.C.COLUMN_LABEL;
+import static com.yaerin.xposed.hider.C.COLUMN_PACKAGE;
+import static com.yaerin.xposed.hider.C.TABLE_APPS;
 
 public class Utilities {
 
@@ -47,7 +47,7 @@ public class Utilities {
     }
 
     public static List<String> getConfig(Context context) {
-        Uri uri = Uri.parse("content://com.yaerin.xposed.hide/apps");
+        Uri uri = Uri.parse("content://com.yaerin.xposed.hider/apps");
         Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
         List<String> apps = new ArrayList<>();
         if (cursor == null) {

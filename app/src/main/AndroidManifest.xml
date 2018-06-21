@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.yaerin.xposed.hide">
+    package="com.yaerin.xposed.hider">
 
     <application
         android:name=".App"
@@ -32,7 +32,7 @@
 
         <provider
             android:name=".provider.SettingsProvider"
-            android:authorities="com.yaerin.xposed.hide"
+            android:authorities="com.yaerin.xposed.hider"
             android:exported="true"
             android:grantUriPermissions="true"
             tools:ignore="ExportedContentProvider" />

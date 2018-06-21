@@ -1,4 +1,4 @@
-package com.yaerin.xposed.hide.widget;
+package com.yaerin.xposed.hider.widget;
 
 import android.content.Context;
 import android.graphics.drawable.ColorDrawable;
@@ -8,8 +8,8 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.yaerin.xposed.hide.R;
-import com.yaerin.xposed.hide.bean.AppInfo;
+import com.yaerin.xposed.hider.R;
+import com.yaerin.xposed.hider.bean.AppInfo;
 
 public class AppView extends RelativeLayout {
 

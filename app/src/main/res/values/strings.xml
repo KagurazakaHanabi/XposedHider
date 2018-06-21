@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Xposed Hide</string>
+    <string name="app_name">Xposed Hider</string>
 
     <string name="tip_reboot">Module is NOT enabled</string>
 
+    <string name="title_search">Search</string>
     <string name="title_about">About</string>
     <string name="title_donate">Donate</string>
 

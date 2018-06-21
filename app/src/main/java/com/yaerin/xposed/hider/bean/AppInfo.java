@@ -1,4 +1,4 @@
-package com.yaerin.xposed.hide.bean;
+package com.yaerin.xposed.hider.bean;
 
 import android.graphics.drawable.Drawable;
 

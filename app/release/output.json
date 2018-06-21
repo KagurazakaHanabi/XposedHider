@@ -6,8 +6,8 @@
     "apkInfo": {
       "type": "MAIN",
       "splits": [],
-      "versionCode": 180622,
-      "versionName": "1.0.0.ac25932",
+      "versionCode": 180624,
+      "versionName": "1.1.1.eb489d4",
       "enabled": true,
       "outputFile": "app-release.apk",
       "fullName": "release",

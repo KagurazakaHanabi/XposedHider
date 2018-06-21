@@ -1,15 +1,15 @@
-package com.yaerin.xposed.hide.util;
+package com.yaerin.xposed.hider.util;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import static com.yaerin.xposed.hide.C.COLUMN_DISABLED;
-import static com.yaerin.xposed.hide.C.COLUMN_FLAGS;
-import static com.yaerin.xposed.hide.C.COLUMN_ICON;
-import static com.yaerin.xposed.hide.C.COLUMN_LABEL;
-import static com.yaerin.xposed.hide.C.COLUMN_PACKAGE;
-import static com.yaerin.xposed.hide.C.TABLE_APPS;
+import static com.yaerin.xposed.hider.C.COLUMN_DISABLED;
+import static com.yaerin.xposed.hider.C.COLUMN_FLAGS;
+import static com.yaerin.xposed.hider.C.COLUMN_ICON;
+import static com.yaerin.xposed.hider.C.COLUMN_LABEL;
+import static com.yaerin.xposed.hider.C.COLUMN_PACKAGE;
+import static com.yaerin.xposed.hider.C.TABLE_APPS;
 
 public class SQLiteHelper extends SQLiteOpenHelper {
 

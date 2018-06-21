@@ -1,4 +1,4 @@
-package com.yaerin.xposed.hide.provider;
+package com.yaerin.xposed.hider.provider;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
@@ -9,11 +9,11 @@ import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import com.yaerin.xposed.hide.util.SQLiteHelper;
+import com.yaerin.xposed.hider.util.SQLiteHelper;
 
 import static android.content.UriMatcher.NO_MATCH;
-import static com.yaerin.xposed.hide.C.AUTHORITY;
-import static com.yaerin.xposed.hide.C.TABLE_APPS;
+import static com.yaerin.xposed.hider.C.AUTHORITY;
+import static com.yaerin.xposed.hider.C.TABLE_APPS;
 
 public class SettingsProvider extends ContentProvider {
 

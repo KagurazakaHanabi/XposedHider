@@ -1,7 +1,7 @@
-package com.yaerin.xposed.hide;
+package com.yaerin.xposed.hider;
 
 public class C {
-    public static final String AUTHORITY = "com.yaerin.xposed.hide";
+    public static final String AUTHORITY = "com.yaerin.xposed.hider";
     public static final String XPOSED = "de.robv.android.xposed";
 
     public static final String KW_VIRTUAL = "virtual";

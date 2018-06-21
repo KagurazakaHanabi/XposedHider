@@ -1,4 +1,4 @@
-package com.yaerin.xposed.hide;
+package com.yaerin.xposed.hider;
 
 import android.app.Application;
 import android.content.Context;
@@ -20,10 +20,11 @@ import java.util.List;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodReplacement;
+import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
-import static com.yaerin.xposed.hide.util.Utilities.getConfig;
+import static com.yaerin.xposed.hider.util.Utilities.getConfig;
 
 /**
  * helpful link: https://github.com/w568w/XposedChecker
@@ -51,7 +52,7 @@ public class XposedHook implements IXposedHookLoadPackage {
 
         if (lpparam.packageName.equals(BuildConfig.APPLICATION_ID)) {
             XposedHelpers.findAndHookMethod(
-                    "com.yaerin.xposed.hide.ui.MainActivity", lpparam.classLoader,
+                    "com.yaerin.xposed.hider.ui.MainActivity", lpparam.classLoader,
                     "isEnabled", XC_MethodReplacement.returnConstant(true)
             );
         }
@@ -159,9 +160,9 @@ public class XposedHook implements IXposedHookLoadPackage {
                         for (int i = 0; i < apps.size(); i++) {
                             ApplicationInfo app = apps.get(i);
                             if (app.metaData != null && app.metaData.getBoolean("xposedmodule") ||
-                                    app.packageName.toLowerCase().contains(C.KW_XPOSED) ||
-                                    app.className.toLowerCase().contains(C.KW_XPOSED) ||
-                                    app.processName.toLowerCase().contains(C.KW_XPOSED)) {
+                                    app.packageName != null && app.packageName.toLowerCase().contains(C.KW_XPOSED) ||
+                                    app.className != null && app.className.toLowerCase().contains(C.KW_XPOSED) ||
+                                    app.processName != null && app.processName.toLowerCase().contains(C.KW_XPOSED)) {
                                 clone.remove(i);
                             }
                         }
@@ -215,25 +216,37 @@ public class XposedHook implements IXposedHookLoadPackage {
                 }
         );
 
-        XposedHelpers.findAndHookMethod(
-                "java.lang.ProcessManager$ProcessImpl",
-                lpparam.classLoader,
-                "getInputStream",
-                new XC_MethodHook() {
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        InputStream is = (InputStream) param.getResult();
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-                        StringBuilder s = new StringBuilder();
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            if (!line.toLowerCase().contains(C.KW_XPOSED) && !line.equals("su")) {
-                                s.append(line).append("\\n");
+        Class<?> clazz = null;
+        try {
+            clazz = Class.forName("java.lang.ProcessManager$ProcessImpl");
+        } catch (ClassNotFoundException ignore) {
+            try {
+                clazz = Class.forName("java.lang.ProcessImpl");
+            } catch (ClassNotFoundException e) {
+                XposedBridge.log("[W] Can't hook Process#getInputStream");
+            }
+        }
+        if (clazz != null) {
+            XposedHelpers.findAndHookMethod(
+                    clazz,
+                    "getInputStream",
+                    new XC_MethodHook() {
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            InputStream is = (InputStream) param.getResult();
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+                            StringBuilder s = new StringBuilder();
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                if (!line.toLowerCase()
+                                        .contains(C.KW_XPOSED) && !line.equals("su")) {
+                                    s.append(line).append("\\n");
+                                }
                             }
+                            param.setResult(new ByteArrayInputStream(s.toString().getBytes()));
                         }
-                        param.setResult(new ByteArrayInputStream(s.toString().getBytes()));
                     }
-                }
-        );
+            );
+        }
     }
 }

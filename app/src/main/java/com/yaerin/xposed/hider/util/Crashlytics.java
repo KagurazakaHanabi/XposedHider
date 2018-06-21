@@ -1,4 +1,4 @@
-package com.yaerin.xposed.hide.util;
+package com.yaerin.xposed.hider.util;
 
 import android.content.Context;
 import android.content.pm.PackageManager;

@@ -1,12 +1,12 @@
-package com.yaerin.xposed.hide.adapter;
+package com.yaerin.xposed.hider.adapter;
 
 import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
-import com.yaerin.xposed.hide.bean.AppInfo;
-import com.yaerin.xposed.hide.widget.AppView;
+import com.yaerin.xposed.hider.bean.AppInfo;
+import com.yaerin.xposed.hider.widget.AppView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,5 +47,13 @@ public class AppsAdapter extends BaseAdapter {
 
     public void remove(int index) {
         mApps.remove(index);
+    }
+
+    public List<AppInfo> getAppList() {
+        return mApps;
+    }
+
+    public void setAppList(List<AppInfo> apps) {
+        mApps = apps;
     }
 }

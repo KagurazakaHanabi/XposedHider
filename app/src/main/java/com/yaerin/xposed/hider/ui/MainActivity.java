@@ -1,4 +1,4 @@
-package com.yaerin.xposed.hide.ui;
+package com.yaerin.xposed.hider.ui;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -7,25 +7,31 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.ListView;
+import android.widget.SearchView;
 
-import com.yaerin.xposed.hide.R;
-import com.yaerin.xposed.hide.adapter.AppsAdapter;
-import com.yaerin.xposed.hide.bean.AppInfo;
-import com.yaerin.xposed.hide.util.Utilities;
-import com.yaerin.xposed.hide.widget.AppView;
+import com.yaerin.xposed.hider.R;
+import com.yaerin.xposed.hider.adapter.AppsAdapter;
+import com.yaerin.xposed.hider.bean.AppInfo;
+import com.yaerin.xposed.hider.util.Utilities;
+import com.yaerin.xposed.hider.widget.AppView;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.yaerin.xposed.hide.util.Utilities.getAppList;
-import static com.yaerin.xposed.hide.util.Utilities.updateAppList;
+import static com.yaerin.xposed.hider.util.Utilities.getAppList;
+import static com.yaerin.xposed.hider.util.Utilities.updateAppList;
 
 public class MainActivity extends Activity {
 
     private static final String TAG = "MainActivity";
 
-    private List<AppInfo> mApps;
+    private AppsAdapter mAdapter;
+
+    private List<AppInfo> mApps = new ArrayList<>();
+    private List<AppInfo> mMatches = new ArrayList<>();
+    private List<AppInfo> mConfig = new ArrayList<>();
 
     public static boolean isEnabled() {
         Log.i(TAG, "#include <iostream>                           ");
@@ -41,7 +47,6 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mApps = new ArrayList<>();
 
         ListView appsView = findViewById(R.id.apps);
         if (isEnabled()) {
@@ -52,28 +57,27 @@ public class MainActivity extends Activity {
             AppInfo app = v.getAppInfo();
             if (v.isChecked()) {
                 app.setDisabled(false);
-                mApps.remove(app);
+                mConfig.remove(app);
                 v.setChecked(false);
             } else {
                 app.setDisabled(true);
-                mApps.add(app);
+                mConfig.add(app);
                 v.setChecked(true);
             }
         });
         new Thread(() -> {
-            List<AppInfo> apps = getAppList(this);
-            if (apps.size() == 0) {
+            mApps = getAppList(this);
+            if (mApps.size() == 0) {
                 updateAppList(this);
-                apps = getAppList(this);
+                mApps = getAppList(this);
             }
-            for (AppInfo app : apps) {
+            for (AppInfo app : mApps) {
                 if (app.isDisabled()) {
-                    mApps.add(app);
+                    mConfig.add(app);
                 }
             }
-            List<AppInfo> finalApps = apps;
             runOnUiThread(() -> {
-                appsView.setAdapter(new AppsAdapter(this, finalApps));
+                appsView.setAdapter(mAdapter = new AppsAdapter(this, mApps));
                 findViewById(R.id.progress).setVisibility(View.GONE);
             });
         }).start();
@@ -82,6 +86,36 @@ public class MainActivity extends Activity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
+        SearchView sv = (SearchView) menu.findItem(R.id.menu_search).getActionView();
+        sv.setInputType(EditorInfo.TYPE_CLASS_TEXT);
+        sv.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
+        sv.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                mMatches.clear();
+                for (AppInfo app : mApps) {
+                    if (app.getLabel().contains(newText) ||
+                            app.getPackageName().contains(newText)) {
+                        mMatches.add(app);
+                    }
+                }
+                if (mAdapter.getAppList().equals(mApps)) {
+                    mAdapter.setAppList(mMatches);
+                }
+                mAdapter.notifyDataSetChanged();
+                return true;
+            }
+        });
+        sv.setOnCloseListener(() -> {
+            mAdapter.setAppList(mApps);
+            mAdapter.notifyDataSetChanged();
+            return false;
+        });
         return true;
     }
 
@@ -98,7 +132,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
-        Utilities.putConfig(this, mApps);
+        Utilities.putConfig(this, mConfig);
         super.onPause();
     }
 }
