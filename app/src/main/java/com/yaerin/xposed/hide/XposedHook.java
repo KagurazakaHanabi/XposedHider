@@ -7,6 +7,7 @@ import android.content.pm.PackageInfo;
 import android.os.Environment;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,8 +26,6 @@ import static com.yaerin.xposed.hide.util.Utilities.getConfig;
  */
 @SuppressWarnings("unchecked")
 public class XposedHook implements IXposedHookLoadPackage {
-
-    private static final String TAG = "XposedHook";
 
     private String mSdcard;
 
@@ -63,6 +62,7 @@ public class XposedHook implements IXposedHookLoadPackage {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) {
                 String packageName = (String) param.args[0];
+                // must match C.XPOSED exactly
                 if (packageName.contains(C.XPOSED)) {
                     param.setThrowable(new ClassNotFoundException(packageName));
                 }
@@ -92,8 +92,8 @@ public class XposedHook implements IXposedHookLoadPackage {
                     protected void beforeHookedMethod(MethodHookParam param) {
                         String path = (String) param.args[0];
                         if (path.matches("/proc/[0-9]+/maps") ||
-                                (path.contains(C.KW_XPOSED) && !path.startsWith(mSdcard))) {
-                            param.args[0] = "X://Windows";
+                                (path.toLowerCase().contains(C.KW_XPOSED) && !path.startsWith(mSdcard))) {
+                            param.args[0] = "/system/build.prop";
                         }
                     }
                 }
@@ -104,9 +104,9 @@ public class XposedHook implements IXposedHookLoadPackage {
             protected void afterHookedMethod(MethodHookParam param) {
                 StackTraceElement[] elements = (StackTraceElement[]) param.getResult();
                 List<StackTraceElement> clone = new ArrayList<>(Arrays.asList(elements));
-                for (int i = 0; i < elements.length; i++) {
-                    if (elements[i].getClassName().contains(C.XPOSED)) {
-                        clone.remove(i);
+                for (StackTraceElement element : elements) {
+                    if (element.getClassName().toLowerCase().contains(C.KW_XPOSED)) {
+                        clone.remove(element);
                     }
                 }
                 param.setResult(clone.toArray(new StackTraceElement[0]));
@@ -133,10 +133,9 @@ public class XposedHook implements IXposedHookLoadPackage {
                     protected void afterHookedMethod(MethodHookParam param) {
                         List<PackageInfo> apps = (List<PackageInfo>) param.getResult();
                         List<PackageInfo> clone = new ArrayList<>(apps);
-                        for (int i = 0; i < apps.size(); i++) {
-                            PackageInfo app = apps.get(i);
-                            if (app.packageName.contains(C.XPOSED)) {
-                                clone.remove(i);
+                        for (PackageInfo app : apps) {
+                            if (app.packageName.toLowerCase().contains(C.KW_XPOSED)) {
+                                clone.remove(app);
                             }
                         }
                         param.setResult(clone);
@@ -155,10 +154,10 @@ public class XposedHook implements IXposedHookLoadPackage {
                         List<ApplicationInfo> clone = new ArrayList<>(apps);
                         for (int i = 0; i < apps.size(); i++) {
                             ApplicationInfo app = apps.get(i);
-                            if (app.metaData.getBoolean("xposedmodule") ||
-                                    app.packageName.contains(C.XPOSED) ||
-                                    app.className.contains(C.XPOSED) ||
-                                    app.processName.contains(C.XPOSED)) {
+                            if (app.metaData != null && app.metaData.getBoolean("xposedmodule") ||
+                                    app.packageName.toLowerCase().contains(C.KW_XPOSED) ||
+                                    app.className.toLowerCase().contains(C.KW_XPOSED) ||
+                                    app.processName.toLowerCase().contains(C.KW_XPOSED)) {
                                 clone.remove(i);
                             }
                         }
@@ -192,5 +191,44 @@ public class XposedHook implements IXposedHookLoadPackage {
                     }
                 }
         );
+
+        XposedHelpers.findAndHookMethod(
+                Runtime.class,
+                "exec",
+                String[].class,
+                String[].class,
+                File.class,
+                new XC_MethodHook() {
+                    @Override
+                    protected void beforeHookedMethod(MethodHookParam param) {
+                        String[] cmdarray = (String[]) param.args[0];
+                        for (String cmd : cmdarray) {
+                            if (cmd.toLowerCase().contains(C.KW_XPOSED)) {
+                                param.setThrowable(new IOException());
+                            }
+                        }
+                    }
+                }
+        );
+
+        /*XposedHelpers.findAndHookMethod(
+                "java.lang.ProcessImpl",
+                lpparam.classLoader,
+                "getInputStream",
+                new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        InputStream is = (InputStream) param.getResult();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+                        String[] s = new String[100];
+                        String line = null;
+                        while ((line = reader.readLine()) != null) {
+                            if (!line.toLowerCase().contains(C.KW_XPOSED)) {
+                                AdaptiveIconDrawable
+                            }
+                        }
+                    }
+                }
+        );*/
     }
 }

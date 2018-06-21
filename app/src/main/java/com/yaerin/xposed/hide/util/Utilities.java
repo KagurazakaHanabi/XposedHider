@@ -8,6 +8,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -107,7 +108,7 @@ public class Utilities {
         }
         db.execSQL("delete from " + TABLE_APPS);
         for (AppInfo app : newList) {
-            Bitmap bitmap = (((BitmapDrawable) app.getIcon()).getBitmap());
+            Bitmap bitmap = getBitmap(app.getIcon());
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, bos);
             byte[] iconBytes = bos.toByteArray();
@@ -119,5 +120,17 @@ public class Utilities {
             values.put(COLUMN_DISABLED, app.isDisabled());
             db.insert(TABLE_APPS, null, values);
         }
+    }
+
+    private static Bitmap getBitmap(Drawable drawable) {
+        if (drawable instanceof BitmapDrawable) {
+            return ((BitmapDrawable) drawable).getBitmap();
+        }
+        final Bitmap bmp = Bitmap.createBitmap(drawable.getIntrinsicWidth(),
+                drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        final Canvas canvas = new Canvas(bmp);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+        return bmp;
     }
 }
