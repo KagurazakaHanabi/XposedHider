@@ -22,9 +22,9 @@ public class AppView extends RelativeLayout {
     public AppView(Context context, AppInfo info) {
         super(context);
         LayoutInflater.from(context).inflate(R.layout.view_app, this, true);
-        mIcon = findViewById(R.id.app_icon);
-        mName = findViewById(R.id.app_name);
-        mPackage = findViewById(R.id.app_package);
+        mIcon = (ImageView) findViewById(R.id.app_icon);
+        mName = (TextView) findViewById(R.id.app_name);
+        mPackage = (TextView) findViewById(R.id.app_package);
         setAppInfo(info);
     }
 
@@ -58,6 +58,6 @@ public class AppView extends RelativeLayout {
 
     public void setChecked(boolean checked) {
         mAppInfo.setDisabled(checked);
-        setBackground(checked ? new ColorDrawable(0xFFE1A7A2) : null);
+        setBackground(checked ? new ColorDrawable(0xE1A7A2) : null);
     }
 }

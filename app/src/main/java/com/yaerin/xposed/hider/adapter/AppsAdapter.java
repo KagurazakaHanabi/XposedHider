@@ -38,6 +38,7 @@ public class AppsAdapter extends BaseAdapter {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
+
         return new AppView(mContext, mApps.get(position));
     }
 

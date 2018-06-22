@@ -25,8 +25,6 @@ import static com.yaerin.xposed.hider.util.Utilities.updateAppList;
 
 public class MainActivity extends Activity {
 
-    private static final String TAG = "MainActivity";
-
     private AppsAdapter mAdapter;
 
     private List<AppInfo> mApps = new ArrayList<>();
@@ -34,12 +32,6 @@ public class MainActivity extends Activity {
     private List<AppInfo> mConfig = new ArrayList<>();
 
     public static boolean isEnabled() {
-        Log.i(TAG, "#include <iostream>                           ");
-        Log.i(TAG, "                                              ");
-        Log.i(TAG, "int main(void) {                              ");
-        Log.i(TAG, "    std::cout << \"Hello World\" << std::endl;");
-        Log.i(TAG, "    return 0;                                 ");
-        Log.i(TAG, "}                                             ");
         return false;
     }
 
@@ -48,7 +40,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        ListView appsView = findViewById(R.id.apps);
+        ListView appsView = (ListView) findViewById(R.id.apps);
         if (isEnabled()) {
             findViewById(R.id.tip_reboot).setVisibility(View.GONE);
         }
@@ -126,6 +118,8 @@ public class MainActivity extends Activity {
                 startActivity(new Intent(this, SettingsActivity.class));
                 return true;
             }
+            default:
+                break;
         }
         return false;
     }
