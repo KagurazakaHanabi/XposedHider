@@ -1,27 +1,23 @@
 package com.yaerin.xposed.hider;
 
-import android.app.Application;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.annotation.Keep;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XC_MethodReplacement;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
@@ -32,7 +28,8 @@ import static com.yaerin.xposed.hider.util.Utilities.getConfig;
  * helpful link: https://github.com/w568w/XposedChecker
  */
 @SuppressWarnings("unchecked")
-public class XposedHook implements IXposedHookLoadPackage {
+@Keep
+public class XposedHook {
 
     private String mSdcard;
 
@@ -46,30 +43,11 @@ public class XposedHook implements IXposedHookLoadPackage {
         return bundle != null && bundle.getBoolean("xposedmodule", false);
     }
 
-    @Override
-    public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) {
-
-        XposedHelpers.findAndHookMethod(
-                Application.class,
-                "attach",
-                Context.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) {
-                        Context context = (Context) param.args[0];
-                        mSdcard = Environment.getExternalStorageDirectory().getPath();
-                        if(!isXposedModule(lpparam.appInfo,context)) {
-                            next(context, lpparam);
-                        }
-                    }
-                }
-        );
-
-        if (lpparam.packageName.equals(BuildConfig.APPLICATION_ID)) {
-            XposedHelpers.findAndHookMethod(
-                    "com.yaerin.xposed.hider.ui.MainActivity", lpparam.classLoader,
-                    "isEnabled", XC_MethodReplacement.returnConstant(true)
-            );
+    @Keep
+    public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam, Context context) {
+        mSdcard = Environment.getExternalStorageDirectory().getPath();
+        if (!isXposedModule(lpparam.appInfo, context)) {
+            next(context, lpparam);
         }
     }
 
@@ -91,6 +69,7 @@ public class XposedHook implements IXposedHookLoadPackage {
                 }
             }
         };
+        // FIXME: 18-6-23 w568w:It's very dangerous to hook these methods,thinking to replace them.
         XposedHelpers.findAndHookMethod(
                 ClassLoader.class,
                 "loadClass",
@@ -127,10 +106,10 @@ public class XposedHook implements IXposedHookLoadPackage {
             @Override
             protected void afterHookedMethod(MethodHookParam param) {
                 StackTraceElement[] elements = (StackTraceElement[]) param.getResult();
-                List<StackTraceElement> clone = new ArrayList<>(Arrays.asList(elements));
+                List<StackTraceElement> clone = new ArrayList<>();
                 for (StackTraceElement element : elements) {
-                    if (element.getClassName().toLowerCase().contains(C.KW_XPOSED)) {
-                        clone.remove(element);
+                    if (!element.getClassName().toLowerCase().contains(C.KW_XPOSED)) {
+                        clone.add(element);
                     }
                 }
                 param.setResult(clone.toArray(new StackTraceElement[0]));
