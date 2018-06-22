@@ -48,7 +48,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        ListView appsView = findViewById(R.id.apps);
+        ListView appsView = (ListView) findViewById(R.id.apps);
         if (isEnabled()) {
             findViewById(R.id.tip_reboot).setVisibility(View.GONE);
         }
