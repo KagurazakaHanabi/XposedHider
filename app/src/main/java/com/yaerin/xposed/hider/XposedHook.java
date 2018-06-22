@@ -4,6 +4,8 @@ import android.app.Application;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.os.Environment;
 
 import java.io.BufferedReader;
@@ -34,8 +36,19 @@ public class XposedHook implements IXposedHookLoadPackage {
 
     private String mSdcard;
 
+    public static boolean isXposedModule(ApplicationInfo applicationInfo, Context context) {
+        Bundle bundle = null;
+        try {
+            bundle = context.getPackageManager().getApplicationInfo(applicationInfo.packageName, PackageManager.GET_META_DATA).metaData;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+        return bundle != null && bundle.getBoolean("xposedmodule", false);
+    }
+
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) {
+
         XposedHelpers.findAndHookMethod(
                 Application.class,
                 "attach",
@@ -45,7 +58,9 @@ public class XposedHook implements IXposedHookLoadPackage {
                     protected void afterHookedMethod(MethodHookParam param) {
                         Context context = (Context) param.args[0];
                         mSdcard = Environment.getExternalStorageDirectory().getPath();
-                        next(context, lpparam);
+                        if(!isXposedModule(lpparam.appInfo,context)) {
+                            next(context, lpparam);
+                        }
                     }
                 }
         );
@@ -59,11 +74,14 @@ public class XposedHook implements IXposedHookLoadPackage {
     }
 
     private void next(Context context, XC_LoadPackage.LoadPackageParam lpparam) {
+        if (lpparam.classLoader == null) {
+            return;
+        }
         if (!getConfig(context).contains(lpparam.packageName)) {
             return;
         }
 
-        XC_MethodHook HOOK_CLASS = new XC_MethodHook() {
+        XC_MethodHook hookClass = new XC_MethodHook() {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) {
                 String packageName = (String) param.args[0];
@@ -78,7 +96,7 @@ public class XposedHook implements IXposedHookLoadPackage {
                 "loadClass",
                 String.class,
                 boolean.class,
-                HOOK_CLASS
+                hookClass
         );
         XposedHelpers.findAndHookMethod(
                 Class.class,
@@ -86,7 +104,7 @@ public class XposedHook implements IXposedHookLoadPackage {
                 String.class,
                 boolean.class,
                 ClassLoader.class,
-                HOOK_CLASS
+                hookClass
         );
 
         XposedHelpers.findAndHookConstructor(
@@ -96,15 +114,16 @@ public class XposedHook implements IXposedHookLoadPackage {
                     @Override
                     protected void beforeHookedMethod(MethodHookParam param) {
                         String path = (String) param.args[0];
-                        if (path.matches("/proc/[0-9]+/maps") ||
-                                (path.toLowerCase().contains(C.KW_XPOSED) && !path.startsWith(mSdcard))) {
+                        boolean shouldDo = path.matches("/proc/[0-9]+/maps") ||
+                                (path.toLowerCase().contains(C.KW_XPOSED) && !path.startsWith(mSdcard));
+                        if (shouldDo) {
                             param.args[0] = "/system/build.prop";
                         }
                     }
                 }
         );
 
-        XC_MethodHook HOOK_STACK = new XC_MethodHook() {
+        XC_MethodHook hookStack = new XC_MethodHook() {
             @Override
             protected void afterHookedMethod(MethodHookParam param) {
                 StackTraceElement[] elements = (StackTraceElement[]) param.getResult();
@@ -120,12 +139,12 @@ public class XposedHook implements IXposedHookLoadPackage {
         XposedHelpers.findAndHookMethod(
                 Throwable.class,
                 "getStackTrace",
-                HOOK_STACK
+                hookStack
         );
         XposedHelpers.findAndHookMethod(
                 Thread.class,
                 "getStackTrace",
-                HOOK_STACK
+                hookStack
         );
 
         XposedHelpers.findAndHookMethod(
@@ -137,10 +156,13 @@ public class XposedHook implements IXposedHookLoadPackage {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) {
                         List<PackageInfo> apps = (List<PackageInfo>) param.getResult();
-                        List<PackageInfo> clone = new ArrayList<>(apps);
-                        for (PackageInfo app : apps) {
-                            if (app.packageName.toLowerCase().contains(C.KW_XPOSED)) {
-                                clone.remove(app);
+                        List<PackageInfo> clone = new ArrayList<>();
+                        //Foreach is very slow.
+                        final int len = apps.size();
+                        for (int i = 0; i < len; i++) {
+                            PackageInfo app = apps.get(i);
+                            if (!app.packageName.toLowerCase().contains(C.KW_XPOSED)) {
+                                clone.add(app);
                             }
                         }
                         param.setResult(clone);
@@ -156,14 +178,16 @@ public class XposedHook implements IXposedHookLoadPackage {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) {
                         List<ApplicationInfo> apps = (List<ApplicationInfo>) param.getResult();
-                        List<ApplicationInfo> clone = new ArrayList<>(apps);
-                        for (int i = 0; i < apps.size(); i++) {
+                        List<ApplicationInfo> clone = new ArrayList<>();
+                        final int len = apps.size();
+                        for (int i = 0; i < len; i++) {
                             ApplicationInfo app = apps.get(i);
-                            if (app.metaData != null && app.metaData.getBoolean("xposedmodule") ||
+                            boolean shouldRemove = app.metaData != null && app.metaData.getBoolean("xposedmodule") ||
                                     app.packageName != null && app.packageName.toLowerCase().contains(C.KW_XPOSED) ||
                                     app.className != null && app.className.toLowerCase().contains(C.KW_XPOSED) ||
-                                    app.processName != null && app.processName.toLowerCase().contains(C.KW_XPOSED)) {
-                                clone.remove(i);
+                                    app.processName != null && app.processName.toLowerCase().contains(C.KW_XPOSED);
+                            if (!shouldRemove) {
+                                clone.add(app);
                             }
                         }
                         param.setResult(clone);
@@ -190,27 +214,8 @@ public class XposedHook implements IXposedHookLoadPackage {
                 new XC_MethodHook() {
                     @Override
                     protected void afterHookedMethod(MethodHookParam param) {
-                        if (param.args[0].equals("vxp")) {
+                        if ("vxp".equals(param.args[0])) {
                             param.setResult(null);
-                        }
-                    }
-                }
-        );
-
-        XposedHelpers.findAndHookMethod(
-                Runtime.class,
-                "exec",
-                String[].class,
-                String[].class,
-                File.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String[] cmdarray = (String[]) param.args[0];
-                        for (String cmd : cmdarray) {
-                            if (cmd.toLowerCase().contains(C.KW_XPOSED)) {
-                                param.setThrowable(new IOException());
-                            }
                         }
                     }
                 }
@@ -239,7 +244,7 @@ public class XposedHook implements IXposedHookLoadPackage {
                             String line;
                             while ((line = reader.readLine()) != null) {
                                 if (!line.toLowerCase()
-                                        .contains(C.KW_XPOSED) && !line.equals("su")) {
+                                        .contains(C.KW_XPOSED) && !"su".equals(line)) {
                                     s.append(line).append("\\n");
                                 }
                             }
