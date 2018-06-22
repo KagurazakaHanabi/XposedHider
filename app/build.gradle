@@ -39,5 +39,5 @@ static def getMyVersionCode() {
 }
 
 static def getMyVersionName() {
-    return "1.1.1." + "git describe --always".execute().getText().trim()
+    return "1.2.1." + "git describe --always".execute().getText().trim()
 }

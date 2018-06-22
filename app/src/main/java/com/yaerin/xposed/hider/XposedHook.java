@@ -8,11 +8,8 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.Keep;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +18,7 @@ import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
+import top.fols.box.io.FilterXpInputStream;
 
 import static com.yaerin.xposed.hider.util.Utilities.getConfig;
 
@@ -63,8 +61,7 @@ public class XposedHook {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) {
                 String packageName = (String) param.args[0];
-                // must match C.XPOSED exactly
-                if (packageName.contains(C.XPOSED)) {
+                if (packageName.matches("de\\.robv\\.android\\.xposed\\.Xposed+.+")) {
                     param.setThrowable(new ClassNotFoundException(packageName));
                 }
             }
@@ -94,7 +91,7 @@ public class XposedHook {
                     protected void beforeHookedMethod(MethodHookParam param) {
                         String path = (String) param.args[0];
                         boolean shouldDo = path.matches("/proc/[0-9]+/maps") ||
-                                (path.toLowerCase().contains(C.KW_XPOSED) && !path.startsWith(mSdcard));
+                                (path.toLowerCase().contains(C.KW_XPOSED) && !path.startsWith(mSdcard)&& !path.contains("fkzhang"));
                         if (shouldDo) {
                             param.args[0] = "/system/build.prop";
                         }
@@ -205,9 +202,9 @@ public class XposedHook {
             clazz = Class.forName("java.lang.ProcessManager$ProcessImpl");
         } catch (ClassNotFoundException ignore) {
             try {
-                clazz = Class.forName("java.lang.ProcessImpl");
+                clazz = Class.forName("java.lang.UNIXProcess");
             } catch (ClassNotFoundException e) {
-                XposedBridge.log("[W] Can't hook Process#getInputStream");
+                XposedBridge.log("[W/XposedHider] Can't hook Process#getInputStream");
             }
         }
         if (clazz != null) {
@@ -216,18 +213,13 @@ public class XposedHook {
                     "getInputStream",
                     new XC_MethodHook() {
                         @Override
-                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        protected void afterHookedMethod(MethodHookParam param) {
                             InputStream is = (InputStream) param.getResult();
-                            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-                            StringBuilder s = new StringBuilder();
-                            String line;
-                            while ((line = reader.readLine()) != null) {
-                                if (!line.toLowerCase()
-                                        .contains(C.KW_XPOSED) && !"su".equals(line)) {
-                                    s.append(line).append("\\n");
-                                }
+                            if (is instanceof FilterXpInputStream) {
+                                param.setResult(is);
+                            } else {
+                                param.setResult(new FilterXpInputStream(is));
                             }
-                            param.setResult(new ByteArrayInputStream(s.toString().getBytes()));
                         }
                     }
             );
