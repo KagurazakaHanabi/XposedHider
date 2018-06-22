@@ -6,12 +6,8 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.os.Environment;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,6 +19,7 @@ import de.robv.android.xposed.XC_MethodReplacement;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
+import top.fols.box.io.FilterXpInputStream;
 
 import static com.yaerin.xposed.hider.util.Utilities.getConfig;
 
@@ -67,8 +64,7 @@ public class XposedHook implements IXposedHookLoadPackage {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) {
                 String packageName = (String) param.args[0];
-                // must match C.XPOSED exactly
-                if (packageName.contains(C.XPOSED)) {
+                if (packageName.matches("de\\.robv\\.android\\.xposed\\.Xposed+.+")) {
                     param.setThrowable(new ClassNotFoundException(packageName));
                 }
             }
@@ -97,7 +93,8 @@ public class XposedHook implements IXposedHookLoadPackage {
                     protected void beforeHookedMethod(MethodHookParam param) {
                         String path = (String) param.args[0];
                         if (path.matches("/proc/[0-9]+/maps") ||
-                                (path.toLowerCase().contains(C.KW_XPOSED) && !path.startsWith(mSdcard))) {
+                                (path.toLowerCase().contains(C.KW_XPOSED) &&
+                                        !path.startsWith(mSdcard) && !path.contains("fkzhang"))) {
                             param.args[0] = "/system/build.prop";
                         }
                     }
@@ -197,33 +194,14 @@ public class XposedHook implements IXposedHookLoadPackage {
                 }
         );
 
-        XposedHelpers.findAndHookMethod(
-                Runtime.class,
-                "exec",
-                String[].class,
-                String[].class,
-                File.class,
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) {
-                        String[] cmdarray = (String[]) param.args[0];
-                        for (String cmd : cmdarray) {
-                            if (cmd.toLowerCase().contains(C.KW_XPOSED)) {
-                                param.setThrowable(new IOException());
-                            }
-                        }
-                    }
-                }
-        );
-
         Class<?> clazz = null;
         try {
             clazz = Class.forName("java.lang.ProcessManager$ProcessImpl");
         } catch (ClassNotFoundException ignore) {
             try {
-                clazz = Class.forName("java.lang.ProcessImpl");
+                clazz = Class.forName("java.lang.UNIXProcess");
             } catch (ClassNotFoundException e) {
-                XposedBridge.log("[W] Can't hook Process#getInputStream");
+                XposedBridge.log("[W/XposedHider] Can't hook Process#getInputStream");
             }
         }
         if (clazz != null) {
@@ -232,18 +210,13 @@ public class XposedHook implements IXposedHookLoadPackage {
                     "getInputStream",
                     new XC_MethodHook() {
                         @Override
-                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        protected void afterHookedMethod(MethodHookParam param) {
                             InputStream is = (InputStream) param.getResult();
-                            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-                            StringBuilder s = new StringBuilder();
-                            String line;
-                            while ((line = reader.readLine()) != null) {
-                                if (!line.toLowerCase()
-                                        .contains(C.KW_XPOSED) && !line.equals("su")) {
-                                    s.append(line).append("\\n");
-                                }
+                            if (is instanceof FilterXpInputStream) {
+                                param.setResult(is);
+                            } else {
+                                param.setResult(new FilterXpInputStream(is));
                             }
-                            param.setResult(new ByteArrayInputStream(s.toString().getBytes()));
                         }
                     }
             );
