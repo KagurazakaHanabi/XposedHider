@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.drawable.ColorDrawable;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
+import android.widget.Checkable;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -11,7 +12,7 @@ import android.widget.TextView;
 import com.yaerin.xposed.hider.R;
 import com.yaerin.xposed.hider.bean.AppInfo;
 
-public class AppView extends RelativeLayout {
+public class AppView extends RelativeLayout implements Checkable {
 
     private AppInfo mAppInfo;
 
@@ -19,12 +20,14 @@ public class AppView extends RelativeLayout {
     private TextView mName;
     private TextView mPackage;
 
+    private boolean mChecked;
+
     public AppView(Context context, AppInfo info) {
         super(context);
         LayoutInflater.from(context).inflate(R.layout.view_app, this, true);
-        mIcon = (ImageView) findViewById(R.id.app_icon);
-        mName = (TextView) findViewById(R.id.app_name);
-        mPackage = (TextView) findViewById(R.id.app_package);
+        mIcon = findViewById(R.id.app_icon);
+        mName = findViewById(R.id.app_name);
+        mPackage = findViewById(R.id.app_package);
         setAppInfo(info);
     }
 
@@ -49,15 +52,21 @@ public class AppView extends RelativeLayout {
         mIcon.setImageDrawable(info.getIcon());
         mName.setText(info.getLabel());
         mPackage.setText(info.getPackageName());
-        setChecked(info.isDisabled());
     }
 
+    @Override
     public boolean isChecked() {
-        return mAppInfo.isDisabled();
+        return mChecked;
     }
 
+    @Override
     public void setChecked(boolean checked) {
-        mAppInfo.setDisabled(checked);
-        setBackground(checked ? new ColorDrawable(0xE1A7A2) : null);
+        mChecked = checked;
+        setBackground(checked ? new ColorDrawable(0xFFE1A7A2) : null);
+    }
+
+    @Override
+    public void toggle() {
+        setChecked(!isChecked());
     }
 }

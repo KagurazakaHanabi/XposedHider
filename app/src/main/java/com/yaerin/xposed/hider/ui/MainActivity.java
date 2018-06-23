@@ -2,8 +2,10 @@ package com.yaerin.xposed.hider.ui;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
+import android.preference.PreferenceManager;
+import android.util.SparseBooleanArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -14,22 +16,29 @@ import android.widget.SearchView;
 import com.yaerin.xposed.hider.R;
 import com.yaerin.xposed.hider.adapter.AppsAdapter;
 import com.yaerin.xposed.hider.bean.AppInfo;
-import com.yaerin.xposed.hider.util.Utilities;
-import com.yaerin.xposed.hider.widget.AppView;
+import com.yaerin.xposed.hider.util.ConfigUtils;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import static com.yaerin.xposed.hider.C.PREF_VIEW_SYSTEM_APP;
 import static com.yaerin.xposed.hider.util.Utilities.getAppList;
 import static com.yaerin.xposed.hider.util.Utilities.updateAppList;
 
 public class MainActivity extends Activity {
 
+    private ListView mAppsView;
+
     private AppsAdapter mAdapter;
+
+    private SharedPreferences mPreferences;
 
     private List<AppInfo> mApps = new ArrayList<>();
     private List<AppInfo> mMatches = new ArrayList<>();
-    private List<AppInfo> mConfig = new ArrayList<>();
+    private Set<String> mConfig = ConfigUtils.get() != null ? ConfigUtils.get() : new HashSet<>();
+    private boolean mSystem = false;
 
     public static boolean isEnabled() {
         return false;
@@ -39,37 +48,24 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        ListView appsView = (ListView) findViewById(R.id.apps);
+        mAppsView = findViewById(R.id.apps);
         if (isEnabled()) {
             findViewById(R.id.tip_reboot).setVisibility(View.GONE);
         }
-        appsView.setOnItemClickListener((parent, view, position, id) -> {
-            AppView v = (AppView) view;
-            AppInfo app = v.getAppInfo();
-            if (v.isChecked()) {
-                app.setDisabled(false);
-                mConfig.remove(app);
-                v.setChecked(false);
-            } else {
-                app.setDisabled(true);
-                mConfig.add(app);
-                v.setChecked(true);
-            }
-        });
+
+        mPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        mSystem = mPreferences.getBoolean(PREF_VIEW_SYSTEM_APP, false);
+
         new Thread(() -> {
-            mApps = getAppList(this);
+            mApps = getAppList(this, mSystem);
             if (mApps.size() == 0) {
-                updateAppList(this);
-                mApps = getAppList(this);
-            }
-            for (AppInfo app : mApps) {
-                if (app.isDisabled()) {
-                    mConfig.add(app);
-                }
+                mApps = updateAppList(this);
             }
             runOnUiThread(() -> {
-                appsView.setAdapter(mAdapter = new AppsAdapter(this, mApps));
+                mAppsView.setAdapter(mAdapter = new AppsAdapter(this, mApps));
+                for (int i = 0; i < mApps.size(); i++) {
+                    mAppsView.setItemChecked(i, mConfig.contains(mApps.get(i).getPackageName()));
+                }
                 findViewById(R.id.progress).setVisibility(View.GONE);
             });
         }).start();
@@ -125,8 +121,29 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        boolean b = mPreferences.getBoolean(PREF_VIEW_SYSTEM_APP, false);
+        if (mSystem != b) {
+            mSystem = b;
+            mApps.clear();
+            mApps.addAll(getAppList(this, mSystem));
+            mAdapter.notifyDataSetChanged();
+        }
+    }
+
+    @Override
     protected void onPause() {
-        Utilities.putConfig(this, mConfig);
+        SparseBooleanArray arr = mAppsView.getCheckedItemPositions();
+        for (int i = 0; i < arr.size(); i++) {
+            String name = mApps.get(i).getPackageName();
+            if (arr.get(i)) {
+                mConfig.add(name);
+            } else {
+                mConfig.remove(name);
+            }
+        }
+        ConfigUtils.put(this, mConfig);
         super.onPause();
     }
 }

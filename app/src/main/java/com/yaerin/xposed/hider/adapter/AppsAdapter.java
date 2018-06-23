@@ -27,7 +27,7 @@ public class AppsAdapter extends BaseAdapter {
     }
 
     @Override
-    public Object getItem(int position) {
+    public AppInfo getItem(int position) {
         return mApps.get(position);
     }
 
@@ -38,8 +38,12 @@ public class AppsAdapter extends BaseAdapter {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-
-        return new AppView(mContext, mApps.get(position));
+        if (convertView == null) {
+            convertView = new AppView(mContext, mApps.get(position));
+        } else {
+            ((AppView) convertView).setAppInfo(mApps.get(position));
+        }
+        return convertView;
     }
 
     public void add(AppInfo app) {

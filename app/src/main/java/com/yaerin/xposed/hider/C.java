@@ -13,5 +13,6 @@ public class C {
     public static final String COLUMN_LABEL = "label";
     public static final String COLUMN_FLAGS = "flags";
     public static final String COLUMN_ICON = "icon";
-    public static final String COLUMN_DISABLED = "disabled";
+
+    public static final String PREF_VIEW_SYSTEM_APP = "pref_view_system_app";
 }

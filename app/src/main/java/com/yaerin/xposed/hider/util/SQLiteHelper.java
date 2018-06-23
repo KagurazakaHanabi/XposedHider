@@ -4,7 +4,6 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import static com.yaerin.xposed.hider.C.COLUMN_DISABLED;
 import static com.yaerin.xposed.hider.C.COLUMN_FLAGS;
 import static com.yaerin.xposed.hider.C.COLUMN_ICON;
 import static com.yaerin.xposed.hider.C.COLUMN_LABEL;
@@ -14,7 +13,7 @@ import static com.yaerin.xposed.hider.C.TABLE_APPS;
 public class SQLiteHelper extends SQLiteOpenHelper {
 
     public SQLiteHelper(Context context) {
-        super(context, "data.db", null, 1);
+        super(context, "data.db", null, 2);
     }
 
     @Override
@@ -23,13 +22,15 @@ public class SQLiteHelper extends SQLiteOpenHelper {
                 COLUMN_PACKAGE + "  TEXT PRIMARY KEY NOT NULL," +
                 COLUMN_LABEL + "    TEXT," +
                 COLUMN_FLAGS + "    INT," +
-                COLUMN_ICON + "     BLOB," +
-                COLUMN_DISABLED + " INT NOT NULL)");
+                COLUMN_ICON + "     BLOB)");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-
+        if (newVersion > oldVersion) {
+            db.execSQL("drop table " + TABLE_APPS);
+            onCreate(db);
+        }
     }
 
 
