@@ -33,9 +33,9 @@ dependencies {
 }
 
 static def getMyVersionCode() {
-    return Integer.parseInt(new SimpleDateFormat("yyMMdd").format(new Date()))+3
+    return Integer.parseInt(new SimpleDateFormat("yyMMdd").format(new Date()))+4
 }
 
 static def getMyVersionName() {
-    return "1.3.1." + "git describe --always".execute().getText().trim()
+    return "1.3.2." + "git describe --always".execute().getText().trim()
 }

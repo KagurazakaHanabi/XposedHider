@@ -56,6 +56,14 @@ public class MainActivity extends Activity {
         mPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         mSystem = mPreferences.getBoolean(PREF_VIEW_SYSTEM_APP, false);
 
+        mAppsView.setOnItemClickListener((parent, view, position, id) -> {
+            if (mAppsView.isItemChecked(position)) {
+                mConfig.add(mAdapter.getAppList().get(position).getPackageName());
+            } else {
+                mConfig.remove(mAdapter.getAppList().get(position).getPackageName());
+            }
+        });
+
         new Thread(() -> {
             mApps = getAppList(this, mSystem);
             if (mApps.size() == 0) {
@@ -95,6 +103,9 @@ public class MainActivity extends Activity {
                 if (mAdapter.getAppList().equals(mApps)) {
                     mAdapter.setAppList(mMatches);
                 }
+                for (int i = 0; i < mMatches.size(); i++) {
+                    mAppsView.setItemChecked(i, mConfig.contains(mMatches.get(i).getPackageName()));
+                }
                 mAdapter.notifyDataSetChanged();
                 return true;
             }
@@ -102,6 +113,9 @@ public class MainActivity extends Activity {
         sv.setOnCloseListener(() -> {
             mAdapter.setAppList(mApps);
             mAdapter.notifyDataSetChanged();
+            for (int i = 0; i < mApps.size(); i++) {
+                mAppsView.setItemChecked(i, mConfig.contains(mApps.get(i).getPackageName()));
+            }
             return false;
         });
         return true;
