@@ -33,7 +33,7 @@ dependencies {
 }
 
 static def getMyVersionCode() {
-    return Integer.parseInt(new SimpleDateFormat("yyMMdd").format(new Date()))+4
+    return Integer.parseInt(new SimpleDateFormat("yyMMdd").format(new Date()))
 }
 
 static def getMyVersionName() {

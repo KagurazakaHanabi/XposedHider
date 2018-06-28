@@ -1,5 +1,7 @@
 package top.fols.box.io;
 
+import android.support.annotation.NonNull;
+
 import java.io.InputStream;
 import java.util.Arrays;
 
@@ -30,13 +32,12 @@ public class FilterXpInputStream extends InputStream {
         return read;
     }
 
-    public int read(byte[] b, int off, int len) throws java.io.IOException {
+    public int read(@NonNull byte[] b, int off, int len) throws java.io.IOException {
         int read = mStream.read(b, off, len);
         if (read != -1) {
             int index;
             mBuffer.write(mReadBuffer);
             mBuffer.write(b, 0, read);
-            System.out.println("kkkk:" + new String(mBuffer.toByteArray()));
             int l = 0;
             while ((index = mBuffer.indexOfBuff(mXposedBytes, l, mBuffer.size())) > -1) {
                 l = index + mXposedBytes.length;
@@ -93,7 +94,6 @@ public class FilterXpInputStream extends InputStream {
             }
 
             read = mBuffer.size() - 6;
-            System.out.println(read);
             if (read > 0)
                 System.arraycopy(mBuffer.getBuff(), 6, b, 0, read);
         }

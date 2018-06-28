@@ -2,7 +2,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory android:title="@string/title_settings">
         <SwitchPreference
-            android:key="pref_view_system_app"
+            android:key="pref_show_system_app"
             android:title="@string/title_view_system_app" />
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/title_about">

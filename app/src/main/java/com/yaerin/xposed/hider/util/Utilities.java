@@ -46,10 +46,14 @@ public class Utilities {
             }
         }
         cursor.close();
+        if (appList.size() == 0) {
+            updateAppList(context);
+            appList = getAppList(context, sys);
+        }
         return appList;
     }
 
-    public static List<AppInfo> updateAppList(Context context) {
+    public static void updateAppList(Context context) {
         SQLiteDatabase db = new SQLiteHelper(context).getWritableDatabase();
         PackageManager pm = context.getPackageManager();
         List<ApplicationInfo> apps = pm.getInstalledApplications(0);
@@ -75,7 +79,6 @@ public class Utilities {
             values.put(COLUMN_ICON, iconBytes);
             db.insert(TABLE_APPS, null, values);
         }
-        return newList;
     }
 
     private static Bitmap getBitmap(Drawable drawable) {

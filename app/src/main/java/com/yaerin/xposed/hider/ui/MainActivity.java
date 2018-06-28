@@ -23,9 +23,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.yaerin.xposed.hider.C.PREF_VIEW_SYSTEM_APP;
+import static com.yaerin.xposed.hider.C.PREF_SHOW_SYSTEM_APP;
 import static com.yaerin.xposed.hider.util.Utilities.getAppList;
-import static com.yaerin.xposed.hider.util.Utilities.updateAppList;
 
 public class MainActivity extends Activity {
 
@@ -38,10 +37,17 @@ public class MainActivity extends Activity {
     private List<AppInfo> mApps = new ArrayList<>();
     private List<AppInfo> mMatches = new ArrayList<>();
     private Set<String> mConfig = ConfigUtils.get() != null ? ConfigUtils.get() : new HashSet<>();
-    private boolean mSystem = false;
+    private boolean mShowSystemApp = false;
 
     public static boolean isEnabled() {
         return false;
+    }
+
+    private void setCheckedItems() {
+        List<AppInfo> apps = mAdapter.getAppList();
+        for (int i = 0; i < apps.size(); i++) {
+            mAppsView.setItemChecked(i, mConfig.contains(apps.get(i).getPackageName()));
+        }
     }
 
     @Override
@@ -54,7 +60,7 @@ public class MainActivity extends Activity {
         }
 
         mPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        mSystem = mPreferences.getBoolean(PREF_VIEW_SYSTEM_APP, false);
+        mShowSystemApp = mPreferences.getBoolean(PREF_SHOW_SYSTEM_APP, false);
 
         mAppsView.setOnItemClickListener((parent, view, position, id) -> {
             if (mAppsView.isItemChecked(position)) {
@@ -65,15 +71,10 @@ public class MainActivity extends Activity {
         });
 
         new Thread(() -> {
-            mApps = getAppList(this, mSystem);
-            if (mApps.size() == 0) {
-                mApps = updateAppList(this);
-            }
+            mApps = getAppList(this, mShowSystemApp);
             runOnUiThread(() -> {
                 mAppsView.setAdapter(mAdapter = new AppsAdapter(this, mApps));
-                for (int i = 0; i < mApps.size(); i++) {
-                    mAppsView.setItemChecked(i, mConfig.contains(mApps.get(i).getPackageName()));
-                }
+                setCheckedItems();
                 findViewById(R.id.progress).setVisibility(View.GONE);
             });
         }).start();
@@ -95,27 +96,22 @@ public class MainActivity extends Activity {
             public boolean onQueryTextChange(String newText) {
                 mMatches.clear();
                 for (AppInfo app : mApps) {
-                    if (app.getLabel().contains(newText) ||
-                            app.getPackageName().contains(newText)) {
+                    if (app.getLabel().contains(newText) || app.getPackageName().contains(newText)) {
                         mMatches.add(app);
                     }
                 }
                 if (mAdapter.getAppList().equals(mApps)) {
                     mAdapter.setAppList(mMatches);
                 }
-                for (int i = 0; i < mMatches.size(); i++) {
-                    mAppsView.setItemChecked(i, mConfig.contains(mMatches.get(i).getPackageName()));
-                }
                 mAdapter.notifyDataSetChanged();
+                setCheckedItems();
                 return true;
             }
         });
         sv.setOnCloseListener(() -> {
             mAdapter.setAppList(mApps);
             mAdapter.notifyDataSetChanged();
-            for (int i = 0; i < mApps.size(); i++) {
-                mAppsView.setItemChecked(i, mConfig.contains(mApps.get(i).getPackageName()));
-            }
+            setCheckedItems();
             return false;
         });
         return true;
@@ -124,7 +120,7 @@ public class MainActivity extends Activity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.menu_about: {
+            case R.id.menu_settings: {
                 startActivity(new Intent(this, SettingsActivity.class));
                 return true;
             }
@@ -137,20 +133,25 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        boolean b = mPreferences.getBoolean(PREF_VIEW_SYSTEM_APP, false);
-        if (mSystem != b) {
-            mSystem = b;
+        boolean b = mPreferences.getBoolean(PREF_SHOW_SYSTEM_APP, false);
+        if (mShowSystemApp != b) {
+            mShowSystemApp = b;
             mApps.clear();
-            mApps.addAll(getAppList(this, mSystem));
+            mApps.addAll(getAppList(this, mShowSystemApp));
             mAdapter.notifyDataSetChanged();
+            setCheckedItems();
         }
     }
 
     @Override
     protected void onPause() {
         SparseBooleanArray arr = mAppsView.getCheckedItemPositions();
+        List<AppInfo> apps = mAdapter.getAppList();
         for (int i = 0; i < arr.size(); i++) {
-            String name = mApps.get(i).getPackageName();
+            if (i >= apps.size()) {
+                continue;
+            }
+            String name = apps.get(i).getPackageName();
             if (arr.get(i)) {
                 mConfig.add(name);
             } else {

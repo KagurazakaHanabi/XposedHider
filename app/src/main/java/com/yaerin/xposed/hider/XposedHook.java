@@ -202,6 +202,27 @@ public class XposedHook {
                 }
         );
 
+        XposedHelpers.findAndHookMethod(
+                File.class,
+                "list",
+                new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) {
+                        String[] fs = (String[]) param.getResult();
+                        if (fs == null) {
+                            return;
+                        }
+                        List<String> list = new ArrayList<>();
+                        for (String f : fs) {
+                            if (!f.toLowerCase().contains(C.KW_XPOSED) && !f.equals("su")) {
+                                list.add(f);
+                            }
+                        }
+                        param.setResult(list.toArray(new String[0]));
+                    }
+                }
+        );
+
         Class<?> clazz = null;
         try {
             clazz = Runtime.getRuntime().exec("echo").getClass();
