@@ -15,6 +15,7 @@ public class FilterXpInputStream extends InputStream {
         this.mStream = stream;
     }
 
+    @Override
     public int read() throws java.io.IOException {
         int read = mStream.read();
         if (read != -1) {
@@ -32,6 +33,7 @@ public class FilterXpInputStream extends InputStream {
         return read;
     }
 
+    @Override
     public int read(@NonNull byte[] b, int off, int len) throws java.io.IOException {
         int read = mStream.read(b, off, len);
         if (read != -1) {
@@ -41,13 +43,13 @@ public class FilterXpInputStream extends InputStream {
             int l = 0;
             while ((index = mBuffer.indexOfBuff(mXposedBytes, l, mBuffer.size())) > -1) {
                 l = index + mXposedBytes.length;
-                byte Random = 'x';
-                mBuffer.getBuff()[index] = Random;
-                mBuffer.getBuff()[index + 1] = Random;
-                mBuffer.getBuff()[index + 2] = Random;
-                mBuffer.getBuff()[index + 3] = Random;
-                mBuffer.getBuff()[index + 4] = Random;
-                mBuffer.getBuff()[index + 5] = Random;
+                byte random = 'x';
+                mBuffer.getBuff()[index] = random;
+                mBuffer.getBuff()[index + 1] = random;
+                mBuffer.getBuff()[index + 2] = random;
+                mBuffer.getBuff()[index + 3] = random;
+                mBuffer.getBuff()[index + 4] = random;
+                mBuffer.getBuff()[index + 5] = random;
             }
             if (read == 1) {
                 mReadBuffer[0] = mReadBuffer[1];
@@ -94,33 +96,41 @@ public class FilterXpInputStream extends InputStream {
             }
 
             read = mBuffer.size() - 6;
-            if (read > 0)
+            System.out.println(read);
+            if (read > 0) {
                 System.arraycopy(mBuffer.getBuff(), 6, b, 0, read);
+            }
         }
         mBuffer.releaseCache();
         return read;
     }
 
+    @Override
     public long skip(long n) throws java.io.IOException {
         return mStream.skip(n);
     }
 
+    @Override
     public int available() throws java.io.IOException {
         return mStream.available();
     }
 
+    @Override
     public void close() throws java.io.IOException {
         mStream.close();
     }
 
+    @Override
     public synchronized void mark(int readlimit) {
         mStream.mark(readlimit);
     }
 
+    @Override
     public synchronized void reset() throws java.io.IOException {
         mStream.reset();
     }
 
+    @Override
     public boolean markSupported() {
         return mStream.markSupported();
     }

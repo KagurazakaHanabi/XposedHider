@@ -21,6 +21,8 @@ import com.yaerin.xposed.hider.util.ConfigUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.Set;
 
 import static com.yaerin.xposed.hider.C.PREF_SHOW_SYSTEM_APP;
@@ -36,6 +38,8 @@ public class MainActivity extends Activity {
 
     private List<AppInfo> mApps = new ArrayList<>();
     private List<AppInfo> mMatches = new ArrayList<>();
+    private List<AppInfo> mConfig = new ArrayList<>();
+    private ExecutorService executor= Executors.newSingleThreadExecutor();
     private Set<String> mConfig = ConfigUtils.get() != null ? ConfigUtils.get() : new HashSet<>();
     private boolean mShowSystemApp = false;
 
@@ -69,15 +73,23 @@ public class MainActivity extends Activity {
                 mConfig.remove(mAdapter.getAppList().get(position).getPackageName());
             }
         });
-
-        new Thread(() -> {
-            mApps = getAppList(this, mShowSystemApp);
+        executor.submit(() -> {
+            mApps = getAppList(this);
+            if (mApps.size() == 0) {
+                updateAppList(this);
+                mApps = getAppList(this);
+            }
+            for (AppInfo app : mApps) {
+                if (app.isDisabled()) {
+                    mConfig.add(app);
+                }
+            }
             runOnUiThread(() -> {
                 mAppsView.setAdapter(mAdapter = new AppsAdapter(this, mApps));
                 setCheckedItems();
                 findViewById(R.id.progress).setVisibility(View.GONE);
             });
-        }).start();
+        });
     }
 
     @Override

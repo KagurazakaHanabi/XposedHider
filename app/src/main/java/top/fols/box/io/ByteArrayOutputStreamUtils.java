@@ -9,7 +9,7 @@ public class ByteArrayOutputStreamUtils extends OutputStream {
     // 将“字节数组输出流”转换成字节数组。
     private static final byte[] mNullByteArray = new byte[0];
     // 保存“字节数组输出流”数据的数组
-    private byte mBuffer[];
+    private byte[] mBuffer;
     // “字节数组输出流”的计数
     private int mCount;
 
@@ -152,7 +152,8 @@ public class ByteArrayOutputStreamUtils extends OutputStream {
             newCapacity = minCapacity;
         }
         if (newCapacity < 0) {
-            if (minCapacity < 0) { // overflow
+            if (minCapacity < 0) {
+                // overflow
                 throw new OutOfMemoryError();
             }
             newCapacity = Integer.MAX_VALUE;
@@ -168,6 +169,7 @@ public class ByteArrayOutputStreamUtils extends OutputStream {
     }
 
     // 写入字节数组b到“字节数组输出流”中。off是“写入字节数组b的起始位置”，len是写入的长度
+    @Override
     public void write(byte b[], int off, int len) {
         if ((off < 0) || (off > b.length) || (len < 0) ||
                 ((off + len) - b.length > 0)) {
