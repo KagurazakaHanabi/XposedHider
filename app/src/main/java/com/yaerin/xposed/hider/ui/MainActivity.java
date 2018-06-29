@@ -95,8 +95,9 @@ public class MainActivity extends Activity {
             @Override
             public boolean onQueryTextChange(String newText) {
                 mMatches.clear();
+                newText=newText.toLowerCase();
                 for (AppInfo app : mApps) {
-                    if (app.getLabel().contains(newText) || app.getPackageName().contains(newText)) {
+                    if (app.getLabel().toLowerCase().contains(newText) || app.getPackageName().contains(newText)) {
                         mMatches.add(app);
                     }
                 }
