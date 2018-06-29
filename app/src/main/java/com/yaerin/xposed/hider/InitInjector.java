@@ -60,6 +60,7 @@ public class InitInjector implements IXposedHookLoadPackage {
         File apkFile = findApkFile(context, modulePackageName);
         if (apkFile == null) {
             new RuntimeException("寻找模块apk失败").printStackTrace();
+            return;
         }
         //加载指定的hook逻辑处理类，并调用它的handleHook方法
         PathClassLoader pathClassLoader = new PathClassLoader(apkFile.getAbsolutePath(), ClassLoader.getSystemClassLoader());

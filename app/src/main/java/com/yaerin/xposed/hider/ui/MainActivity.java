@@ -19,6 +19,8 @@ import com.yaerin.xposed.hider.widget.AppView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.yaerin.xposed.hider.util.Utilities.getAppList;
 import static com.yaerin.xposed.hider.util.Utilities.updateAppList;
@@ -30,7 +32,7 @@ public class MainActivity extends Activity {
     private List<AppInfo> mApps = new ArrayList<>();
     private List<AppInfo> mMatches = new ArrayList<>();
     private List<AppInfo> mConfig = new ArrayList<>();
-
+    private ExecutorService executor= Executors.newSingleThreadExecutor();
     public static boolean isEnabled() {
         return false;
     }
@@ -57,7 +59,7 @@ public class MainActivity extends Activity {
                 v.setChecked(true);
             }
         });
-        new Thread(() -> {
+        executor.submit(() -> {
             mApps = getAppList(this);
             if (mApps.size() == 0) {
                 updateAppList(this);
@@ -72,7 +74,7 @@ public class MainActivity extends Activity {
                 appsView.setAdapter(mAdapter = new AppsAdapter(this, mApps));
                 findViewById(R.id.progress).setVisibility(View.GONE);
             });
-        }).start();
+        });
     }
 
     @Override
