@@ -40,7 +40,6 @@ public class FilterXpInputStream extends InputStream {
             int index;
             mBuffer.write(mReadBuffer);
             mBuffer.write(b, 0, read);
-            System.out.println("kkkk:" + new String(mBuffer.toByteArray()));
             int l = 0;
             while ((index = mBuffer.indexOfBuff(mXposedBytes, l, mBuffer.size())) > -1) {
                 l = index + mXposedBytes.length;

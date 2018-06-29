@@ -6,7 +6,9 @@
 
     <string name="title_search">搜索</string>
     <string name="title_about">关于</string>
+    <string name="title_settings">设置</string>
     <string name="title_donate">捐赠</string>
+    <string name="title_view_system_app">显示系统应用</string>
 
     <string name="text_about">尽可能完美地隐藏Xposed</string>
     <string name="text_donate">点击跳转至微信二维码</string>

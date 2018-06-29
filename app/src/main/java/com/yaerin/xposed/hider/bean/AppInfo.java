@@ -8,17 +8,14 @@ public class AppInfo {
     private String label;
     private int flags;
     private Drawable icon;
-    private boolean disabled;
-
     public AppInfo() {
     }
 
-    public AppInfo(String packageName, String label, int flags, Drawable icon, boolean disabled) {
+    public AppInfo(String packageName, String label, int flags, Drawable icon) {
         this.packageName = packageName;
         this.label = label;
         this.flags = flags;
         this.icon = icon;
-        this.disabled = disabled;
     }
 
     public AppInfo(AppInfo from) {
@@ -57,13 +54,5 @@ public class AppInfo {
 
     public void setIcon(Drawable icon) {
         this.icon = icon;
-    }
-
-    public boolean isDisabled() {
-        return disabled;
-    }
-
-    public void setDisabled(boolean disabled) {
-        this.disabled = disabled;
     }
 }

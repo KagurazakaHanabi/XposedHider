@@ -8,11 +8,16 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.Keep;
 
+import com.yaerin.xposed.hider.util.ConfigUtils;
+
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
@@ -20,21 +25,21 @@ import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 import top.fols.box.io.FilterXpInputStream;
 
-import static com.yaerin.xposed.hider.util.Utilities.getConfig;
-
 /**
  * helpful link: https://github.com/w568w/XposedChecker
  */
-@SuppressWarnings("unchecked")
 @Keep
+@SuppressWarnings("unchecked")
 public class XposedHook {
 
     private String mSdcard;
 
-    public static boolean isXposedModule(ApplicationInfo applicationInfo, Context context) {
+    private static boolean isXposedModule(Context context, ApplicationInfo applicationInfo) {
         Bundle bundle = null;
         try {
-            bundle = context.getPackageManager().getApplicationInfo(applicationInfo.packageName, PackageManager.GET_META_DATA).metaData;
+            bundle = context.getPackageManager()
+                    .getApplicationInfo(applicationInfo.packageName, PackageManager.GET_META_DATA)
+                    .metaData;
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
         }
@@ -42,20 +47,19 @@ public class XposedHook {
     }
 
     @Keep
-    public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam, Context context) {
+    public void handleLoadPackage(Context context, XC_LoadPackage.LoadPackageParam lpparam) {
         mSdcard = Environment.getExternalStorageDirectory().getPath();
-        if (!isXposedModule(lpparam.appInfo, context)) {
-            next(context, lpparam);
+        if (!isXposedModule(context, lpparam.appInfo)) {
+            next(lpparam);
         }
     }
 
-    private void next(Context context, XC_LoadPackage.LoadPackageParam lpparam) {
-        if (lpparam.classLoader == null) {
+    private void next(XC_LoadPackage.LoadPackageParam lpparam) {
+        if ((lpparam.classLoader == null) || !ConfigUtils.get().contains(lpparam.packageName)) {
             return;
         }
-        if (!getConfig(context).contains(lpparam.packageName)) {
-            return;
-        }
+
+        XposedBridge.log("[I/XposedHider] Handle package " + lpparam.packageName);
 
         XC_MethodHook hookClass = new XC_MethodHook() {
             @Override
@@ -66,7 +70,7 @@ public class XposedHook {
                 }
             }
         };
-        // FIXME: 18-6-23 w568w:It's very dangerous to hook these methods,thinking to replace them.
+        // FIXME: 18-6-23 w568w: It's very dangerous to hook these methods, thinking to replace them.
         XposedHelpers.findAndHookMethod(
                 ClassLoader.class,
                 "loadClass",
@@ -91,7 +95,8 @@ public class XposedHook {
                     protected void beforeHookedMethod(MethodHookParam param) {
                         String path = (String) param.args[0];
                         boolean shouldDo = path.matches("/proc/[0-9]+/maps") ||
-                                (path.toLowerCase().contains(C.KW_XPOSED) && !path.startsWith(mSdcard)&& !path.contains("fkzhang"));
+                                (path.toLowerCase().contains(C.KW_XPOSED) &&
+                                        !path.startsWith(mSdcard) && !path.contains("fkzhang"));
                         if (shouldDo) {
                             param.args[0] = "/system/build.prop";
                         }
@@ -133,7 +138,7 @@ public class XposedHook {
                     protected void afterHookedMethod(MethodHookParam param) {
                         List<PackageInfo> apps = (List<PackageInfo>) param.getResult();
                         List<PackageInfo> clone = new ArrayList<>();
-                        //Foreach is very slow.
+                        // foreach is very slow.
                         final int len = apps.size();
                         for (int i = 0; i < len; i++) {
                             PackageInfo app = apps.get(i);
@@ -197,15 +202,32 @@ public class XposedHook {
                 }
         );
 
+        XposedHelpers.findAndHookMethod(
+                File.class,
+                "list",
+                new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) {
+                        String[] fs = (String[]) param.getResult();
+                        if (fs == null) {
+                            return;
+                        }
+                        List<String> list = new ArrayList<>();
+                        for (String f : fs) {
+                            if (!f.toLowerCase().contains(C.KW_XPOSED) && !f.equals("su")) {
+                                list.add(f);
+                            }
+                        }
+                        param.setResult(list.toArray(new String[0]));
+                    }
+                }
+        );
+
         Class<?> clazz = null;
         try {
-            clazz = Class.forName("java.lang.ProcessManager$ProcessImpl");
-        } catch (ClassNotFoundException ignore) {
-            try {
-                clazz = Class.forName("java.lang.UNIXProcess");
-            } catch (ClassNotFoundException e) {
-                XposedBridge.log("[W/XposedHider] Can't hook Process#getInputStream");
-            }
+            clazz = Runtime.getRuntime().exec("echo").getClass();
+        } catch (IOException ignore) {
+            XposedBridge.log("[W/XposedHider] Cannot hook Process#getInputStream");
         }
         if (clazz != null) {
             XposedHelpers.findAndHookMethod(
@@ -224,5 +246,39 @@ public class XposedHook {
                     }
             );
         }
+
+        XposedBridge.hookAllMethods(System.class, "getenv",
+                new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) {
+                        if (param.args.length == 0) {
+                            Map<String, String> res = (Map<String, String>) param.getResult();
+                            String classpath = res.get("CLASSPATH");
+                            param.setResult(filter(classpath));
+                        } else if ("CLASSPATH".equals(param.args[0])) {
+                            String classpath = (String) param.getResult();
+                            param.setResult(filter(classpath));
+                        }
+                    }
+
+                    private String filter(String s) {
+                        List<String> list = Arrays.asList(s.split(":"));
+                        List<String> clone = new ArrayList<>();
+                        for (int i = 0; i < list.size(); i++) {
+                            if (!list.get(i).toLowerCase().contains(C.KW_XPOSED)) {
+                                clone.add(list.get(i));
+                            }
+                        }
+                        StringBuilder res = new StringBuilder();
+                        for (int i = 0; i < clone.size(); i++) {
+                            res.append(clone);
+                            if (i != clone.size() - 1) {
+                                res.append(":");
+                            }
+                        }
+                        return res.toString();
+                    }
+                }
+        );
     }
 }

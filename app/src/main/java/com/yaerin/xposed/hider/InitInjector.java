@@ -18,7 +18,7 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
 /**
  * Created by w568w on 18-3-2.
  * <p>
- * So we do not need to reboot,but it'll run slowlier.
+ * So we do not need to reboot,but it'll run slower.
  *
  * @author w568w
  * @author shuihuadx
@@ -31,7 +31,7 @@ public class InitInjector implements IXposedHookLoadPackage {
 
     @Override
     @Keep
-    public void handleLoadPackage(final XC_LoadPackage.LoadPackageParam loadPackageParam) throws Throwable {
+    public void handleLoadPackage(final XC_LoadPackage.LoadPackageParam loadPackageParam) {
         if (loadPackageParam.packageName.equals(BuildConfig.APPLICATION_ID)) {
             XposedHelpers.findAndHookMethod(
                     "com.yaerin.xposed.hider.ui.MainActivity", loadPackageParam.classLoader,
@@ -46,7 +46,10 @@ public class InitInjector implements IXposedHookLoadPackage {
                 if (context != null) {
                     loadPackageParam.classLoader = context.getClassLoader();
                     try {
-                        invokeHandleHookMethod(context, BuildConfig.APPLICATION_ID, BuildConfig.APPLICATION_ID + ".XposedHook", "handleLoadPackage", loadPackageParam);
+                        invokeHandleHookMethod(
+                                context, BuildConfig.APPLICATION_ID,
+                                BuildConfig.APPLICATION_ID + "r.XposedHook",
+                                "handleLoadPackage", loadPackageParam);
                     } catch (Throwable error) {
                         error.printStackTrace();
                     }
@@ -55,19 +58,26 @@ public class InitInjector implements IXposedHookLoadPackage {
         });
     }
 
-    private void invokeHandleHookMethod(Context context, String modulePackageName, String handleHookClass, String handleHookMethod, XC_LoadPackage.LoadPackageParam loadPackageParam) throws Throwable {
-        //原来的两种方式不是很好,改用这种新的方式
+    private void invokeHandleHookMethod(
+            Context context,
+            String modulePackageName,
+            String handleHookClass,
+            String handleHookMethod,
+            XC_LoadPackage.LoadPackageParam loadPackageParam
+    ) throws Throwable {
+        // 原来的两种方式不是很好,改用这种新的方式
         File apkFile = findApkFile(context, modulePackageName);
         if (apkFile == null) {
-            new RuntimeException("寻找模块apk失败").printStackTrace();
-            return;
+            throw new RuntimeException("Cannot find the module APK.");
         }
-        //加载指定的hook逻辑处理类，并调用它的handleHook方法
-        PathClassLoader pathClassLoader = new PathClassLoader(apkFile.getAbsolutePath(), ClassLoader.getSystemClassLoader());
+        // 加载指定的hook逻辑处理类，并调用它的handleHook方法
+        PathClassLoader pathClassLoader =
+                new PathClassLoader(apkFile.getAbsolutePath(), ClassLoader.getSystemClassLoader());
         Class<?> cls = Class.forName(handleHookClass, true, pathClassLoader);
         Object instance = cls.newInstance();
-        Method method = cls.getDeclaredMethod(handleHookMethod, XC_LoadPackage.LoadPackageParam.class, Context.class);
-        method.invoke(instance, loadPackageParam, context);
+        Method method = cls.getDeclaredMethod(handleHookMethod,
+                Context.class, XC_LoadPackage.LoadPackageParam.class);
+        method.invoke(instance, context, loadPackageParam);
     }
 
     /**
@@ -82,8 +92,10 @@ public class InitInjector implements IXposedHookLoadPackage {
             return null;
         }
         try {
-            Context moudleContext = context.createPackageContext(modulePackageName, Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY);
-            String apkPath = moudleContext.getPackageCodePath();
+            Context moduleContext = context.createPackageContext(
+                    modulePackageName,
+                    Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY);
+            String apkPath = moduleContext.getPackageCodePath();
             return new File(apkPath);
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();

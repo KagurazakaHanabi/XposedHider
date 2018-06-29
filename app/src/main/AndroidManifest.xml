@@ -30,12 +30,6 @@
         </activity>
         <activity android:name=".ui.SettingsActivity" />
 
-        <provider
-            android:name=".provider.SettingsProvider"
-            android:authorities="com.yaerin.xposed.hider"
-            android:exported="true"
-            android:grantUriPermissions="true"
-            tools:ignore="ExportedContentProvider" />
         <receiver android:name=".receiver.PackageReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.PACKAGE_ADDED" />

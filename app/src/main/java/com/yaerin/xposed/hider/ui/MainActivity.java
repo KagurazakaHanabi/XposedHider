@@ -2,8 +2,10 @@ package com.yaerin.xposed.hider.ui;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
+import android.preference.PreferenceManager;
+import android.util.SparseBooleanArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -14,49 +16,61 @@ import android.widget.SearchView;
 import com.yaerin.xposed.hider.R;
 import com.yaerin.xposed.hider.adapter.AppsAdapter;
 import com.yaerin.xposed.hider.bean.AppInfo;
-import com.yaerin.xposed.hider.util.Utilities;
-import com.yaerin.xposed.hider.widget.AppView;
+import com.yaerin.xposed.hider.util.ConfigUtils;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.Set;
 
+import static com.yaerin.xposed.hider.C.PREF_SHOW_SYSTEM_APP;
 import static com.yaerin.xposed.hider.util.Utilities.getAppList;
-import static com.yaerin.xposed.hider.util.Utilities.updateAppList;
 
 public class MainActivity extends Activity {
 
+    private ListView mAppsView;
+
     private AppsAdapter mAdapter;
+
+    private SharedPreferences mPreferences;
 
     private List<AppInfo> mApps = new ArrayList<>();
     private List<AppInfo> mMatches = new ArrayList<>();
     private List<AppInfo> mConfig = new ArrayList<>();
     private ExecutorService executor= Executors.newSingleThreadExecutor();
+    private Set<String> mConfig = ConfigUtils.get() != null ? ConfigUtils.get() : new HashSet<>();
+    private boolean mShowSystemApp = false;
+
     public static boolean isEnabled() {
         return false;
+    }
+
+    private void setCheckedItems() {
+        List<AppInfo> apps = mAdapter.getAppList();
+        for (int i = 0; i < apps.size(); i++) {
+            mAppsView.setItemChecked(i, mConfig.contains(apps.get(i).getPackageName()));
+        }
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        ListView appsView = (ListView) findViewById(R.id.apps);
+        mAppsView = findViewById(R.id.apps);
         if (isEnabled()) {
             findViewById(R.id.tip_reboot).setVisibility(View.GONE);
         }
-        appsView.setOnItemClickListener((parent, view, position, id) -> {
-            AppView v = (AppView) view;
-            AppInfo app = v.getAppInfo();
-            if (v.isChecked()) {
-                app.setDisabled(false);
-                mConfig.remove(app);
-                v.setChecked(false);
+
+        mPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        mShowSystemApp = mPreferences.getBoolean(PREF_SHOW_SYSTEM_APP, false);
+
+        mAppsView.setOnItemClickListener((parent, view, position, id) -> {
+            if (mAppsView.isItemChecked(position)) {
+                mConfig.add(mAdapter.getAppList().get(position).getPackageName());
             } else {
-                app.setDisabled(true);
-                mConfig.add(app);
-                v.setChecked(true);
+                mConfig.remove(mAdapter.getAppList().get(position).getPackageName());
             }
         });
         executor.submit(() -> {
@@ -71,7 +85,8 @@ public class MainActivity extends Activity {
                 }
             }
             runOnUiThread(() -> {
-                appsView.setAdapter(mAdapter = new AppsAdapter(this, mApps));
+                mAppsView.setAdapter(mAdapter = new AppsAdapter(this, mApps));
+                setCheckedItems();
                 findViewById(R.id.progress).setVisibility(View.GONE);
             });
         });
@@ -92,9 +107,9 @@ public class MainActivity extends Activity {
             @Override
             public boolean onQueryTextChange(String newText) {
                 mMatches.clear();
+                newText=newText.toLowerCase();
                 for (AppInfo app : mApps) {
-                    if (app.getLabel().contains(newText) ||
-                            app.getPackageName().contains(newText)) {
+                    if (app.getLabel().toLowerCase().contains(newText) || app.getPackageName().contains(newText)) {
                         mMatches.add(app);
                     }
                 }
@@ -102,12 +117,14 @@ public class MainActivity extends Activity {
                     mAdapter.setAppList(mMatches);
                 }
                 mAdapter.notifyDataSetChanged();
+                setCheckedItems();
                 return true;
             }
         });
         sv.setOnCloseListener(() -> {
             mAdapter.setAppList(mApps);
             mAdapter.notifyDataSetChanged();
+            setCheckedItems();
             return false;
         });
         return true;
@@ -116,7 +133,7 @@ public class MainActivity extends Activity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.menu_about: {
+            case R.id.menu_settings: {
                 startActivity(new Intent(this, SettingsActivity.class));
                 return true;
             }
@@ -127,8 +144,34 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        boolean b = mPreferences.getBoolean(PREF_SHOW_SYSTEM_APP, false);
+        if (mShowSystemApp != b) {
+            mShowSystemApp = b;
+            mApps.clear();
+            mApps.addAll(getAppList(this, mShowSystemApp));
+            mAdapter.notifyDataSetChanged();
+            setCheckedItems();
+        }
+    }
+
+    @Override
     protected void onPause() {
-        Utilities.putConfig(this, mConfig);
+        SparseBooleanArray arr = mAppsView.getCheckedItemPositions();
+        List<AppInfo> apps = mAdapter.getAppList();
+        for (int i = 0; i < arr.size(); i++) {
+            if (i >= apps.size()) {
+                continue;
+            }
+            String name = apps.get(i).getPackageName();
+            if (arr.get(i)) {
+                mConfig.add(name);
+            } else {
+                mConfig.remove(name);
+            }
+        }
+        ConfigUtils.put(this, mConfig);
         super.onPause();
     }
 }
