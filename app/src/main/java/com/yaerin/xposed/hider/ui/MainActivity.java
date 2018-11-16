@@ -21,9 +21,9 @@ import com.yaerin.xposed.hider.util.ConfigUtils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.Set;
 
 import static com.yaerin.xposed.hider.C.PREF_SHOW_SYSTEM_APP;
 import static com.yaerin.xposed.hider.util.Utilities.getAppList;
@@ -38,8 +38,7 @@ public class MainActivity extends Activity {
 
     private List<AppInfo> mApps = new ArrayList<>();
     private List<AppInfo> mMatches = new ArrayList<>();
-    private List<AppInfo> mConfig = new ArrayList<>();
-    private ExecutorService executor= Executors.newSingleThreadExecutor();
+    private ExecutorService mExecutor = Executors.newSingleThreadExecutor();
     private Set<String> mConfig = ConfigUtils.get() != null ? ConfigUtils.get() : new HashSet<>();
     private boolean mShowSystemApp = false;
 
@@ -73,23 +72,7 @@ public class MainActivity extends Activity {
                 mConfig.remove(mAdapter.getAppList().get(position).getPackageName());
             }
         });
-        executor.submit(() -> {
-            mApps = getAppList(this);
-            if (mApps.size() == 0) {
-                updateAppList(this);
-                mApps = getAppList(this);
-            }
-            for (AppInfo app : mApps) {
-                if (app.isDisabled()) {
-                    mConfig.add(app);
-                }
-            }
-            runOnUiThread(() -> {
-                mAppsView.setAdapter(mAdapter = new AppsAdapter(this, mApps));
-                setCheckedItems();
-                findViewById(R.id.progress).setVisibility(View.GONE);
-            });
-        });
+        mAppsView.setAdapter(mAdapter = new AppsAdapter(this, mApps));
     }
 
     @Override
@@ -107,7 +90,7 @@ public class MainActivity extends Activity {
             @Override
             public boolean onQueryTextChange(String newText) {
                 mMatches.clear();
-                newText=newText.toLowerCase();
+                newText = newText.toLowerCase();
                 for (AppInfo app : mApps) {
                     if (app.getLabel().toLowerCase().contains(newText) || app.getPackageName().contains(newText)) {
                         mMatches.add(app);
@@ -147,12 +130,19 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         boolean b = mPreferences.getBoolean(PREF_SHOW_SYSTEM_APP, false);
-        if (mShowSystemApp != b) {
+        if (mShowSystemApp != b || mApps.isEmpty()) {
             mShowSystemApp = b;
             mApps.clear();
-            mApps.addAll(getAppList(this, mShowSystemApp));
             mAdapter.notifyDataSetChanged();
-            setCheckedItems();
+            findViewById(R.id.progress).setVisibility(View.VISIBLE);
+            mExecutor.submit(() -> {
+                mApps.addAll(getAppList(this, mShowSystemApp));
+                runOnUiThread(() -> {
+                    mAdapter.notifyDataSetChanged();
+                    setCheckedItems();
+                    findViewById(R.id.progress).setVisibility(View.GONE);
+                });
+            });
         }
     }
 

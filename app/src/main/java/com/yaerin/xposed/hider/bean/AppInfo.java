@@ -8,6 +8,7 @@ public class AppInfo {
     private String label;
     private int flags;
     private Drawable icon;
+
     public AppInfo() {
     }
 

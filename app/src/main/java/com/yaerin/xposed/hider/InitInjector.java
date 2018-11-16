@@ -18,7 +18,7 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
 /**
  * Created by w568w on 18-3-2.
  * <p>
- * So we do not need to reboot,but it'll run slower.
+ * So we do not need to reboot, but it'll run slower.
  *
  * @author w568w
  * @author shuihuadx

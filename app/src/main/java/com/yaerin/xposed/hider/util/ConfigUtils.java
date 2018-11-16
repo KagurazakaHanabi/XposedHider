@@ -48,6 +48,7 @@ public class ConfigUtils {
         StringBuilder s = new StringBuilder();
         File path = new File("//data//data//" + BuildConfig.APPLICATION_ID + "//app_rules");
         File file = new File(path, FILE);
+        setFilePermissions(file, 0777, -1, -1);
         if (file.exists() && file.canRead()) {
             try {
                 InputStreamReader isr = new InputStreamReader(new FileInputStream(file));

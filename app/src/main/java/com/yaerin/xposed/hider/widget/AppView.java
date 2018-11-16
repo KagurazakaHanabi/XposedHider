@@ -11,6 +11,7 @@ import android.widget.TextView;
 
 import com.yaerin.xposed.hider.R;
 import com.yaerin.xposed.hider.bean.AppInfo;
+import com.yaerin.xposed.hider.util.ConfigUtils;
 
 public class AppView extends RelativeLayout implements Checkable {
 
