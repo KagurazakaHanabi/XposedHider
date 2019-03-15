@@ -39,7 +39,7 @@ public class MainActivity extends Activity {
     private List<AppInfo> mApps = new ArrayList<>();
     private List<AppInfo> mMatches = new ArrayList<>();
     private ExecutorService mExecutor = Executors.newSingleThreadExecutor();
-    private Set<String> mConfig = ConfigUtils.get() != null ? ConfigUtils.get() : new HashSet<>();
+    private Set<String> mConfig;
     private boolean mShowSystemApp = false;
 
     public static boolean isEnabled() {
@@ -61,6 +61,7 @@ public class MainActivity extends Activity {
         if (isEnabled()) {
             findViewById(R.id.tip_reboot).setVisibility(View.GONE);
         }
+        mConfig = ConfigUtils.get(getApplicationContext()) != null ? ConfigUtils.get(getApplicationContext()) : new HashSet<>();
 
         mPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         mShowSystemApp = mPreferences.getBoolean(PREF_SHOW_SYSTEM_APP, false);

@@ -1,17 +1,27 @@
 package com.yaerin.xposed.hider;
 
+import android.app.AndroidAppHelper;
 import android.app.Application;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.support.annotation.Keep;
+import android.util.Log;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.File;
 import java.lang.reflect.Method;
+import java.util.HashSet;
+import java.util.Set;
 
 import dalvik.system.PathClassLoader;
 import de.robv.android.xposed.IXposedHookLoadPackage;
+import de.robv.android.xposed.IXposedHookZygoteInit;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodReplacement;
+import de.robv.android.xposed.XSharedPreferences;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
@@ -22,40 +32,81 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
  *
  * @author w568w
  * @author shuihuadx
+ * @author EBK21
  */
 @Keep
-public class InitInjector implements IXposedHookLoadPackage {
+public class InitInjector implements IXposedHookLoadPackage,IXposedHookZygoteInit {
     public InitInjector() {
         super();
     }
 
+    private  static void fff() {
+         XSharedPreferences sp = null;
+         sp = new XSharedPreferences(BuildConfig.APPLICATION_ID,"enabled");
+         sp.makeWorldReadable();
+    }
+
+    @Override
+    public void initZygote(IXposedHookZygoteInit.StartupParam startupParam) {
+        fff();
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                Context moduleContext = AndroidAppHelper.currentApplication().createPackageContext(BuildConfig.APPLICATION_ID, Context.CONTEXT_IGNORE_SECURITY);
+                File file = new File(moduleContext.getDataDir().getAbsolutePath());
+                file.setExecutable(true, false);
+            }
+        }catch (Exception e) {
+            Log.w("Xposed","[XposedHider]: Can not set my data dir permission to excutable at init,What the hell???");
+        }
+    }
+    private static Set<String> getShare() {
+        fff();
+        XSharedPreferences sp = new XSharedPreferences(BuildConfig.APPLICATION_ID,"enabled");
+        String stt = sp.getString("apps","");
+        Set<String> tp = new HashSet<>();
+        tp.add("xxxx");
+        if(stt == null ) {
+            return tp;
+        }
+        try {
+            Set<String> ss = new Gson().fromJson(stt, new TypeToken<Set<String>>() {
+            }.getType());
+            return ss;
+        }catch (Exception e) {
+            Log.w("Xposed" ,"[XposedHider]: Error in config data");
+            return tp;
+        }
+
+    }
     @Override
     @Keep
-    public void handleLoadPackage(final XC_LoadPackage.LoadPackageParam loadPackageParam) {
+    public void handleLoadPackage(final XC_LoadPackage.LoadPackageParam loadPackageParam)  {
         if (loadPackageParam.packageName.equals(BuildConfig.APPLICATION_ID)) {
             XposedHelpers.findAndHookMethod(
                     "com.yaerin.xposed.hider.ui.MainActivity", loadPackageParam.classLoader,
                     "isEnabled", XC_MethodReplacement.returnConstant(true)
             );
         }
-        XposedHelpers.findAndHookMethod(Application.class, "attach", Context.class, new XC_MethodHook() {
-            @Override
-            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                super.afterHookedMethod(param);
-                Context context = (Context) param.args[0];
-                if (context != null) {
-                    loadPackageParam.classLoader = context.getClassLoader();
-                    try {
-                        invokeHandleHookMethod(
-                                context, BuildConfig.APPLICATION_ID,
-                                BuildConfig.APPLICATION_ID + "r.XposedHook",
-                                "handleLoadPackage", loadPackageParam);
-                    } catch (Throwable error) {
-                        error.printStackTrace();
+        if(getShare().contains(loadPackageParam.packageName)) {
+            XposedHelpers.findAndHookMethod(Application.class, "attach", Context.class, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    super.afterHookedMethod(param);
+                    Context context = (Context) param.args[0];
+                    if (context != null) {
+                        loadPackageParam.classLoader = context.getClassLoader();
+                        try {
+                            invokeHandleHookMethod(
+                                    context, BuildConfig.APPLICATION_ID,
+                                    BuildConfig.APPLICATION_ID + "r.XposedHook",
+                                    "handleLoadPackage", loadPackageParam);
+                        } catch (Throwable error) {
+                            error.printStackTrace();
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
     }
 
     private void invokeHandleHookMethod(

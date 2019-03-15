@@ -8,8 +8,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.Keep;
 
-import com.yaerin.xposed.hider.util.ConfigUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,7 +30,11 @@ import top.fols.box.io.FilterXpInputStream;
 @SuppressWarnings("unchecked")
 public class XposedHook {
 
+
     private String mSdcard;
+
+
+
 
     private static boolean isXposedModule(Context context, ApplicationInfo applicationInfo) {
         Bundle bundle = null;
@@ -55,7 +57,8 @@ public class XposedHook {
     }
 
     private void next(XC_LoadPackage.LoadPackageParam lpparam) {
-        if ((lpparam.classLoader == null) || !ConfigUtils.get().contains(lpparam.packageName)) {
+
+        if (lpparam.classLoader == null)  {
             return;
         }
 
