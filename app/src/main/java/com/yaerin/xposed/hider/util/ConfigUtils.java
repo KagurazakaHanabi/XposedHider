@@ -41,7 +41,6 @@ public class ConfigUtils {
 
     public static Set<String> get(Context context) {
         String se;
-        StringBuilder s = new StringBuilder();
         mPreferences = context.getSharedPreferences("enabled", Activity.MODE_PRIVATE);
         se =  mPreferences.getString("apps","null");
         if(se != null && se.equals("null")) {

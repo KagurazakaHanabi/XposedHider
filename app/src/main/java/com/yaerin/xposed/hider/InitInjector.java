@@ -15,6 +15,7 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import dalvik.system.PathClassLoader;
 import de.robv.android.xposed.IXposedHookLoadPackage;
@@ -39,18 +40,18 @@ public class InitInjector implements IXposedHookLoadPackage {
     }
 
     private Set<String> getconf(ClassLoader cl,String pkg) {
-        Context UseContext;
+        AtomicReference<Context> UseContext = new AtomicReference<>();
         Context systemContext = (Context) XposedHelpers.callMethod( XposedHelpers.callStaticMethod( XposedHelpers.findClass("android.app.ActivityThread", cl), "currentActivityThread"), "getSystemContext" );
         try {
-            UseContext = systemContext.createPackageContext(pkg, Context.CONTEXT_IGNORE_SECURITY);
+            UseContext.set(systemContext.createPackageContext(pkg, Context.CONTEXT_IGNORE_SECURITY));
         }catch (Exception er) {
-            UseContext = systemContext;
+            UseContext.set(systemContext);
         }
         Context realContext;
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            realContext=UseContext.createDeviceProtectedStorageContext();
+            realContext = UseContext.get().createDeviceProtectedStorageContext();
         }else{
-            realContext = UseContext;
+            realContext = UseContext.get();
         }
         SharedPreferences prefs = new RemotePreferences(realContext, BuildConfig.APPLICATION_ID+"r.configs", "enabled");
         String con;
