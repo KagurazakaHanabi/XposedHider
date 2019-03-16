@@ -29,7 +29,13 @@
             </intent-filter>
         </activity>
         <activity android:name=".ui.SettingsActivity" />
-
+        <provider
+            android:authorities="com.yaerin.xposed.hider.configs"
+            android:name=".ConfigProvider"
+            android:exported="true"
+            android:directBootAware="true"
+            >
+        </provider>
     </application>
 
 </manifest>

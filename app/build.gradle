@@ -27,6 +27,7 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.android.support:support-annotations:27.1.1'
     implementation 'com.google.code.gson:gson:2.8.5'
+    implementation 'com.crossbowffs.remotepreferences:remotepreferences:0.7'
     compileOnly 'de.robv.android.xposed:api:82'
     compileOnly 'de.robv.android.xposed:api:82:sources'
 }

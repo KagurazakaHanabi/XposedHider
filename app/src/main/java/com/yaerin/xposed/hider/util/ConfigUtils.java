@@ -3,6 +3,7 @@ package com.yaerin.xposed.hider.util;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -19,11 +20,10 @@ import java.util.Set;
 public class ConfigUtils {
 
     private static SharedPreferences mPreferences;
-    private static SharedPreferences.Editor mPrefEdit;
 
 
-    public static void put(Context context, Set<String> apps) {
-
+    private static void writeconfall(Context context,Set<String> apps) {
+        SharedPreferences.Editor mPrefEdit;
         mPreferences = context.getSharedPreferences("enabled", Activity.MODE_PRIVATE);
         mPrefEdit = mPreferences.edit();
         Gson g = new Gson();
@@ -31,21 +31,27 @@ public class ConfigUtils {
         mPrefEdit.putString("apps",js);
         mPrefEdit.apply();
     }
+    public static void put(Context context, Set<String> apps) {
+        writeconfall(context,apps);
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            Context decon = context.createDeviceProtectedStorageContext();
+            writeconfall(decon, apps);
+        }
+    }
 
     public static Set<String> get(Context context) {
-        String se = "" ;
+        String se;
         StringBuilder s = new StringBuilder();
         mPreferences = context.getSharedPreferences("enabled", Activity.MODE_PRIVATE);
-        se =  mPreferences.getString("apps","");
-        if(se.isEmpty()) {
+        se =  mPreferences.getString("apps","null");
+        if(se != null && se.equals("null")) {
             Toast.makeText(context, "get: empty!", Toast.LENGTH_SHORT).show();
             return null;
         }
         Toast.makeText(context,"get: "+se,Toast.LENGTH_SHORT).show();
         try {
-            Set<String> ss = new Gson().fromJson(se, new TypeToken<Set<String>>() {
+            return new Gson().fromJson(se, new TypeToken<Set<String>>() {
             }.getType());
-            return ss;
         }catch (Exception e) {
             return null;
         }
